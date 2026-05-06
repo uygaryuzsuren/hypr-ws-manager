@@ -49,4 +49,4 @@ To add the manager to your application menu:
 Settings are stored in `~/.config/hypr-ws-manager/config.json`. You can adjust the `hyprctl` path, theme, and transparency directly through the in-app settings menu.
 
 ## License
-MIT
+BSD 3-Clause "New" or "Revised" License
