@@ -6,3 +6,4 @@ venv/
 .env
 config.json
 *.log
+GEMINI.md
