@@ -14,8 +14,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Hyprland Workspace Manager")
         self.resize(400, 600)
         
-        # Set window flags for always on top
-        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+        # Set window flags for always on top and transparency
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         
         self.setup_ui()
         self.apply_settings()
@@ -28,7 +29,7 @@ class MainWindow(QMainWindow):
         # Auto-refresh timer
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.check_workspace_change)
-        self.timer.start(1000) # Check more frequently for responsiveness
+        self.timer.start(200) # Check frequently for responsiveness
 
     def check_workspace_change(self):
         if self.is_exploding:
@@ -139,22 +140,24 @@ class MainWindow(QMainWindow):
         self.refresh_workspaces()
 
     def apply_settings(self):
-        self.setWindowOpacity(self.config.transparency)
+        # We handle opacity via rgba in the CSS instead of setWindowOpacity
+        alpha = int(self.config.transparency * 255)
+        
         if self.config.theme == "dark":
-            self.setStyleSheet("""
-                QMainWindow, QWidget { background-color: #1e1e2e; color: #cdd6f4; }
-                QLineEdit { background-color: #313244; border: 1px solid #45475a; border-radius: 5px; padding: 5px; color: #cdd6f4; }
-                QListWidget { background-color: #1e1e2e; border: none; }
-                QPushButton { background-color: #313244; border: none; border-radius: 5px; color: #cdd6f4; padding: 8px 12px; }
-                QPushButton:hover { background-color: #45475a; }
+            self.setStyleSheet(f"""
+                QMainWindow, QWidget {{ background-color: rgba(30, 30, 46, {alpha}); color: #cdd6f4; }}
+                QLineEdit {{ background-color: rgba(49, 50, 68, {alpha}); border: 1px solid #45475a; border-radius: 5px; padding: 5px; color: #cdd6f4; }}
+                QListWidget {{ background-color: transparent; border: none; }}
+                QPushButton {{ background-color: rgba(49, 50, 68, {alpha}); border: none; border-radius: 5px; color: #cdd6f4; padding: 8px 12px; }}
+                QPushButton:hover {{ background-color: #45475a; }}
             """)
         else:
-            self.setStyleSheet("""
-                QMainWindow, QWidget { background-color: #eff1f5; color: #4c4f69; }
-                QLineEdit { background-color: #e6e9ef; border: 1px solid #ccd0da; border-radius: 5px; padding: 5px; color: #4c4f69; }
-                QListWidget { background-color: #eff1f5; border: none; }
-                QPushButton { background-color: #e6e9ef; border: none; border-radius: 5px; color: #4c4f69; padding: 8px 12px; }
-                QPushButton:hover { background-color: #ccd0da; }
+            self.setStyleSheet(f"""
+                QMainWindow, QWidget {{ background-color: rgba(239, 241, 245, {alpha}); color: #4c4f69; }}
+                QLineEdit {{ background-color: rgba(230, 233, 239, {alpha}); border: 1px solid #ccd0da; border-radius: 5px; padding: 5px; color: #4c4f69; }}
+                QListWidget {{ background-color: transparent; border: none; }}
+                QPushButton {{ background-color: rgba(230, 233, 239, {alpha}); border: none; border-radius: 5px; color: #4c4f69; padding: 8px 12px; }}
+                QPushButton:hover {{ background-color: #ccd0da; }}
             """)
 
     def open_settings(self):

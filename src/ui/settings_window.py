@@ -44,10 +44,14 @@ class SettingsWindow(QDialog):
         layout.addLayout(theme_layout)
 
         # Transparency
-        layout.addWidget(QLabel("Transparency:"))
+        layout.addWidget(QLabel("Transparency (0=Opaque, 100=Transparent):"))
         self.transparency_slider = QSlider(Qt.Horizontal)
-        self.transparency_slider.setRange(10, 100)
-        self.transparency_slider.setValue(int(self.config.transparency * 100))
+        self.transparency_slider.setRange(0, 100)
+        # If config.transparency is actually opacity (0.1 to 1.0),
+        # then opacity 1.0 (opaque) = transparency 0
+        # and opacity 0.1 = transparency 90
+        current_transparency = int((1.0 - self.config.transparency) * 100)
+        self.transparency_slider.setValue(current_transparency)
         layout.addWidget(self.transparency_slider)
 
         # Buttons
@@ -96,7 +100,10 @@ class SettingsWindow(QDialog):
             QMessageBox.critical(self, "Invalid Path", error_msg)
             return
 
+        # Convert slider transparency back to opacity
+        opacity = 1.0 - (self.transparency_slider.value() / 100.0)
+        
         self.config.hyprctl_path = new_path
         self.config.theme = self.theme_combo.currentText()
-        self.config.transparency = self.transparency_slider.value() / 100.0
+        self.config.transparency = opacity
         self.accept()

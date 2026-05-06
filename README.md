@@ -29,5 +29,9 @@ After running the installer, "Hyprland Workspace Manager" will appear in your ap
 ## Configuration
 Settings are stored in `~/.config/hypr-ws-manager/config.json`. You can adjust the `hyprctl` path, theme, and transparency directly through the in-app settings menu.
 
-## License
-BSD 3-Clause "New" or "Revised" License
+## Uninstallation
+To remove the desktop launcher and icon from your system:
+```bash
+chmod +x uninstall.sh
+./uninstall.sh
+```
