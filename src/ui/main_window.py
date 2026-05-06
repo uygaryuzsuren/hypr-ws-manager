@@ -12,7 +12,7 @@ class MainWindow(QMainWindow):
         self.is_editing = False
         self.is_exploding = False
         self.setWindowTitle("Hyprland Workspace Manager")
-        self.resize(400, 600)
+        #self.resize(400, 600)
         
         # Set window flags for always on top and transparency
         self.setAttribute(Qt.WA_TranslucentBackground)
@@ -29,7 +29,7 @@ class MainWindow(QMainWindow):
         # Auto-refresh timer
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.check_workspace_change)
-        self.timer.start(200) # Check frequently for responsiveness
+        self.timer.start(2000) # Check frequently for responsiveness
 
     def check_workspace_change(self):
         if self.is_exploding:
@@ -45,6 +45,8 @@ class MainWindow(QMainWindow):
         super().showEvent(event)
         # Use a tiny delay to ensure Hyprland has registered the window
         QTimer.singleShot(50, self.hypr.make_floating_and_center)
+
+        self.resize(600, 600)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
