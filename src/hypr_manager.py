@@ -67,10 +67,9 @@ class HyprManager:
         self._run_command(["dispatch", "movetoworkspace", f"{workspace_id},address:{window_address}"])
 
     def set_workspace_name(self, workspace_id, name):
+        print(f"DEBUG: Renaming workspace {workspace_id} to {name}")
         self._run_command(["dispatch", "renameworkspace", str(workspace_id), name])
 
-    def get_highest_workspace_id(self):
+    def get_existing_workspace_ids(self):
         workspaces = self.get_workspaces()
-        if not workspaces:
-            return 0
-        return max([ws['id'] for ws in workspaces])
+        return [ws['id'] for ws in workspaces]

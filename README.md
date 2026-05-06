@@ -5,7 +5,8 @@ A lightweight Python GUI for managing, naming, and navigating Hyprland workspace
 ![App Icon](assets/icon.svg)
 
 ## Features
-- **Custom Naming:** Assign custom names to workspaces (e.g., "Web", "Dev").
+- **Custom Naming:** Assign custom names to workspaces.
+- **Explode Workspace:** Distribute all windows in the active workspace to new, uniquely named workspaces (ID-[APP_CLASS]-Original_Title).
 - **Auto-Reset:** Automatically clears names when a workspace becomes empty.
 - **Smart Launching:** Opens centered in floating mode and stays on top.
 - **Auto-Close:** Automatically closes after navigating to a workspace.

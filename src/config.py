@@ -16,6 +16,9 @@ class Config:
         self.config_dir = Path.home() / ".config" / "hypr-ws-manager"
         self.config_file = self.config_dir / "config.json"
         self.data = self.DEFAULT_CONFIG.copy()
+        # Initialize original_titles if missing in legacy configs
+        if "original_titles" not in self.data:
+            self.data["original_titles"] = {}
         self.load()
 
     def load(self):
@@ -73,7 +76,18 @@ class Config:
         self.data["workspace_names"][str(ws_id)] = name
         self.save()
 
+    def set_original_title(self, ws_id, title):
+        if "original_titles" not in self.data:
+            self.data["original_titles"] = {}
+        self.data["original_titles"][str(ws_id)] = title
+        self.save()
+
+    def get_original_title(self, ws_id):
+        return self.data.get("original_titles", {}).get(str(ws_id))
+
     def remove_workspace_name(self, ws_id):
         if "workspace_names" in self.data and str(ws_id) in self.data["workspace_names"]:
             del self.data["workspace_names"][str(ws_id)]
-            self.save()
+        if "original_titles" in self.data and str(ws_id) in self.data["original_titles"]:
+            del self.data["original_titles"][str(ws_id)]
+        self.save()

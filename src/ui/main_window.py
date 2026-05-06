@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLineEdit, QListWidget, QListWidgetItem, QPushButton, QLabel)
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer, QThread
 from src.ui.widgets import WorkspaceItem
 from src.ui.settings_window import SettingsWindow
 
@@ -74,18 +74,42 @@ class MainWindow(QMainWindow):
         if not windows:
             return
 
-        current_max_id = self.hypr.get_highest_workspace_id()
+        # Get existing IDs to find empty ones
+        existing_ids = self.hypr.get_existing_workspace_ids()
+        
+        # Start looking for empty workspaces from ID 1
+        available_ws_ids = []
+        candidate_id = 1
+        while len(available_ws_ids) < len(windows):
+            if candidate_id not in existing_ids:
+                available_ws_ids.append(candidate_id)
+            candidate_id += 1
         
         for i, window in enumerate(windows):
-            new_ws_id = current_max_id + 1 + i
+            new_ws_id = available_ws_ids[i]
             win_addr = window['address']
             win_title = window['title']
+            win_class = window['class']
+            if not win_title:
+                win_title = f"Window_{win_class}"
             
-            # Sanitise title for workspace name (no spaces/quotes)
-            name = win_title.replace(" ", "_")[:20]
+            # Sanitise title for workspace name
+            import re
+            clean_title = re.sub(r'[^a-zA-Z0-9_-]', ' ', win_title)
+            clean_title = re.sub(r'\s+', ' ', clean_title).strip().replace(" ", "_")
             
+            # Sanitise class
+            clean_class = re.sub(r'[^a-zA-Z0-9_-]', '_', win_class)
+            
+            name = f"{new_ws_id}-[{clean_class}]-{clean_title}"
+            
+            # Create/switch to workspace so it exists, then move and rename
+            self.hypr.switch_to_workspace(new_ws_id)
             self.hypr.move_window_to_workspace(win_addr, new_ws_id)
+            QThread.msleep(100)
             self.hypr.set_workspace_name(new_ws_id, name)
+            self.config.set_workspace_name(new_ws_id, name)
+            self.config.set_original_title(new_ws_id, win_title)
             
         self.refresh_workspaces()
 
@@ -149,8 +173,24 @@ class MainWindow(QMainWindow):
         self.list_widget.clear()
         for ws in workspaces:
             ws_id = ws['id']
-            custom_name = self.config.get_workspace_name(ws_id)
-            display_name = custom_name if custom_name else str(ws_id)
+            # We want to display: ID-[APP_CLASS]-Original_Title
+            # We fetch original title and app class from config
+            original_title = self.config.get_original_title(ws_id)
+            
+            # Extract app class from the sanitized name if available for display
+            # Or store app class in a new config field? Let's try to extract from the sanitized name first.
+            sanitized_name = self.config.get_workspace_name(ws_id)
+            
+            display_name = str(ws_id)
+            if sanitized_name:
+                import re
+                match = re.search(r'\[(.*?)\]', sanitized_name)
+                app_class = match.group(1) if match else ""
+                
+                if original_title:
+                    display_name = f"{ws_id}-[{app_class}]-{original_title}"
+                else:
+                    display_name = sanitized_name
             
             if search_text and search_text not in display_name.lower():
                 continue
