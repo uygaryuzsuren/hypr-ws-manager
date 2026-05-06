@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Hyprland Workspace Manager
+Comment=Manage and name Hyprland workspaces
+Exec=bash -c "cd $(dirname %k) && ./launch.sh"
+Path=
+# If you want the icon to show up, copy assets/icon.svg to ~/.local/share/icons/hypr-ws-manager.svg
+Icon=hypr-ws-manager
+Terminal=false
+Type=Application
+Categories=Utility;System;
