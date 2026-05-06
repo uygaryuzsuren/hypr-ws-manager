@@ -38,6 +38,6 @@ else
     source "$VENV_DIR/bin/activate"
 fi
 
-# Run the application
+# Run the application in the background and detach from terminal
 echo "Launching Hyprland Workspace Manager..."
-exec python run.py
+setsid python run.py >/dev/null 2>&1 &
