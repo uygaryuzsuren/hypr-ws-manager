@@ -59,11 +59,35 @@ class MainWindow(QMainWindow):
         self.list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.main_layout.addWidget(self.list_widget)
 
+        self.explode_btn = QPushButton("Explode Current Workspace")
+        self.explode_btn.clicked.connect(self.on_explode_all)
+        self.main_layout.addWidget(self.explode_btn)
+
         self.error_label = QLabel("No workspaces found. Is Hyprland running?")
         self.error_label.setAlignment(Qt.AlignCenter)
         self.error_label.setStyleSheet("color: #f38ba8; font-weight: bold;")
         self.error_label.hide()
         self.main_layout.addWidget(self.error_label)
+
+    def on_explode_all(self):
+        windows = self.hypr.get_active_workspace_windows()
+        if not windows:
+            return
+
+        current_max_id = self.hypr.get_highest_workspace_id()
+        
+        for i, window in enumerate(windows):
+            new_ws_id = current_max_id + 1 + i
+            win_addr = window['address']
+            win_title = window['title']
+            
+            # Sanitise title for workspace name (no spaces/quotes)
+            name = win_title.replace(" ", "_")[:20]
+            
+            self.hypr.move_window_to_workspace(win_addr, new_ws_id)
+            self.hypr.set_workspace_name(new_ws_id, name)
+            
+        self.refresh_workspaces()
 
     def apply_settings(self):
         self.setWindowOpacity(self.config.transparency)
@@ -72,7 +96,7 @@ class MainWindow(QMainWindow):
                 QMainWindow, QWidget { background-color: #1e1e2e; color: #cdd6f4; }
                 QLineEdit { background-color: #313244; border: 1px solid #45475a; border-radius: 5px; padding: 5px; color: #cdd6f4; }
                 QListWidget { background-color: #1e1e2e; border: none; }
-                QPushButton { background-color: #313244; border: none; border-radius: 5px; color: #cdd6f4; }
+                QPushButton { background-color: #313244; border: none; border-radius: 5px; color: #cdd6f4; padding: 8px 12px; }
                 QPushButton:hover { background-color: #45475a; }
             """)
         else:
@@ -80,7 +104,7 @@ class MainWindow(QMainWindow):
                 QMainWindow, QWidget { background-color: #eff1f5; color: #4c4f69; }
                 QLineEdit { background-color: #e6e9ef; border: 1px solid #ccd0da; border-radius: 5px; padding: 5px; color: #4c4f69; }
                 QListWidget { background-color: #eff1f5; border: none; }
-                QPushButton { background-color: #e6e9ef; border: none; border-radius: 5px; color: #4c4f69; }
+                QPushButton { background-color: #e6e9ef; border: none; border-radius: 5px; color: #4c4f69; padding: 8px 12px; }
                 QPushButton:hover { background-color: #ccd0da; }
             """)
 

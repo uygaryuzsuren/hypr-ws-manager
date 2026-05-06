@@ -49,3 +49,28 @@ class HyprManager:
         self._run_command(["dispatch", "setfloating", selector])
         self._run_command(["dispatch", "centerwindow", selector])
         self._run_command(["dispatch", "pin", selector])
+
+    def get_active_workspace_windows(self):
+        output = self._run_command(["clients", "-j"])
+        if output:
+            try:
+                clients = json.loads(output)
+                active_ws = self.get_active_workspace()
+                if active_ws:
+                    active_id = active_ws['id']
+                    return [c for c in clients if c['workspace']['id'] == active_id]
+            except json.JSONDecodeError:
+                logging.error("Failed to parse hyprctl clients output")
+        return []
+
+    def move_window_to_workspace(self, window_address, workspace_id):
+        self._run_command(["dispatch", "movetoworkspace", f"{workspace_id},address:{window_address}"])
+
+    def set_workspace_name(self, workspace_id, name):
+        self._run_command(["dispatch", "renameworkspace", str(workspace_id), name])
+
+    def get_highest_workspace_id(self):
+        workspaces = self.get_workspaces()
+        if not workspaces:
+            return 0
+        return max([ws['id'] for ws in workspaces])
