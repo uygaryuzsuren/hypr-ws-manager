@@ -16,35 +16,15 @@ A lightweight Python GUI for managing, naming, and navigating Hyprland workspace
 
 ## Installation & Setup
 
-### Quick Launch
-The project includes a `launch.sh` script that automatically manages a virtual environment and dependencies.
+### Quick Start
+Run the installer script, which will set up your desktop launcher, icon, and environment:
 ```bash
-chmod +x launch.sh
-./launch.sh
+chmod +x install.sh
+./install.sh
 ```
 
-### Manual Installation
-1. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. Run the application:
-   ```bash
-   python run.py
-   ```
-
-### Desktop Integration
-To add the manager to your application menu:
-1. Copy the desktop entry:
-   ```bash
-   cp hypr-ws-manager.desktop ~/.local/share/applications/
-   ```
-2. Install the icon:
-   ```bash
-   mkdir -p ~/.local/share/icons
-   cp assets/icon.svg ~/.local/share/icons/hypr-ws-manager.svg
-   ```
+### Usage
+After running the installer, "Hyprland Workspace Manager" will appear in your application launcher.
 
 ## Configuration
 Settings are stored in `~/.config/hypr-ws-manager/config.json`. You can adjust the `hyprctl` path, theme, and transparency directly through the in-app settings menu.

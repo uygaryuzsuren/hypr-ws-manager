@@ -1,8 +1,10 @@
 [Desktop Entry]
 Name=Hyprland Workspace Manager
 Comment=Manage and name Hyprland workspaces
-Exec=bash -c "cd $(dirname %k) && ./launch.sh"
-Path=
+Exec=./launch.sh
+Path=/home/uygar/gemini/hypr-ws-manager/
+# IMPORTANT: To make this portable for others, they must edit the Path= to their own installation directory.
+# If you are the developer, keep this as is.
 # If you want the icon to show up, copy assets/icon.svg to ~/.local/share/icons/hypr-ws-manager.svg
 Icon=hypr-ws-manager
 Terminal=false
