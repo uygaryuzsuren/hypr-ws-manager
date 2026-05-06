@@ -1,18 +1,28 @@
 # Hyprland Workspace Manager
 
-A lightweight Python GUI for managing and naming Hyprland workspaces.
+A lightweight Python GUI for managing, naming, and navigating Hyprland workspaces.
+
+![App Icon](assets/icon.svg)
 
 ## Features
-- **Search:** Quickly find workspaces by name or ID.
-- **Naming:** Assign custom names to workspaces.
-- **Navigation:** Click on a workspace to switch to it.
-- **Settings:**
-  - Change visual theme (Light/Dark).
-  - Adjust window transparency.
-  - Configure custom `hyprctl` path.
+- **Custom Naming:** Assign custom names to workspaces (e.g., "Web", "Dev").
+- **Auto-Reset:** Automatically clears names when a workspace becomes empty.
+- **Smart Launching:** Opens centered in floating mode and stays on top.
+- **Auto-Close:** Automatically closes after navigating to a workspace.
+- **Quick Search:** Filter workspaces by name or ID.
+- **Dark/Light Themes:** Built-in theme support with adjustable transparency.
+- **Escape to Close:** Quickly dismiss the manager with the `Esc` key.
 
-## Installation
+## Installation & Setup
 
+### Quick Launch
+The project includes a `launch.sh` script that automatically manages a virtual environment and dependencies.
+```bash
+chmod +x launch.sh
+./launch.sh
+```
+
+### Manual Installation
 1. Install dependencies:
    ```bash
    pip install -r requirements.txt
@@ -20,8 +30,23 @@ A lightweight Python GUI for managing and naming Hyprland workspaces.
 
 2. Run the application:
    ```bash
-   python3 src/main.py
+   python run.py
+   ```
+
+### Desktop Integration
+To add the manager to your application menu:
+1. Copy the desktop entry:
+   ```bash
+   cp hypr-ws-manager.desktop ~/.local/share/applications/
+   ```
+2. Install the icon:
+   ```bash
+   mkdir -p ~/.local/share/icons
+   cp assets/icon.svg ~/.local/share/icons/hypr-ws-manager.svg
    ```
 
 ## Configuration
-Settings are stored in `~/.config/hypr-ws-manager/config.json`.
+Settings are stored in `~/.config/hypr-ws-manager/config.json`. You can adjust the `hyprctl` path, theme, and transparency directly through the in-app settings menu.
+
+## License
+MIT
