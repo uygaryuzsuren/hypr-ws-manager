@@ -70,6 +70,11 @@ class MainWindow(QMainWindow):
         self.main_layout.addWidget(self.error_label)
 
     def on_explode_all(self):
+        active_ws = self.hypr.get_active_workspace()
+        if not active_ws:
+            return
+        original_ws_id = active_ws['id']
+
         windows = self.hypr.get_active_workspace_windows()
         if not windows:
             return
@@ -111,6 +116,7 @@ class MainWindow(QMainWindow):
             self.config.set_workspace_name(new_ws_id, name)
             self.config.set_original_title(new_ws_id, win_title)
             
+        self.hypr.switch_to_workspace(original_ws_id)
         self.refresh_workspaces()
 
     def apply_settings(self):
@@ -215,6 +221,8 @@ class MainWindow(QMainWindow):
 
     def rename_workspace(self, ws_id, new_name):
         self.config.set_workspace_name(ws_id, new_name)
+        # Also update original_titles so refresh_workspaces picks up the new name
+        self.config.set_original_title(ws_id, new_name)
         self.filter_workspaces()
 
     def on_editing_started(self):

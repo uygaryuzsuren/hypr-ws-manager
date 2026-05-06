@@ -82,6 +82,11 @@ class WorkspaceItem(QWidget):
         self.editing_finished.emit()
 
     def mousePressEvent(self, event):
+        # Only emit clicked if the user didn't click on the edit button area
+        # Check if the click is within the edit_btn bounds
+        if self.edit_btn.isVisible() and self.edit_btn.geometry().contains(event.pos()):
+            return
+        
         if event.button() == Qt.LeftButton and self.stack.currentIndex() == 0:
             self.clicked.emit(self.ws_id)
         super().mousePressEvent(event)
