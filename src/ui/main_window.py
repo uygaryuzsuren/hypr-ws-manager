@@ -10,6 +10,7 @@ class MainWindow(QMainWindow):
         self.config = config
         self.hypr = hypr
         self.is_editing = False
+        self.is_exploding = False
         self.setWindowTitle("Hyprland Workspace Manager")
         self.resize(400, 600)
         
@@ -20,10 +21,24 @@ class MainWindow(QMainWindow):
         self.apply_settings()
         self.refresh_workspaces()
         
+        # Track active workspace for auto-close
+        active_ws = self.hypr.get_active_workspace()
+        self.last_workspace_id = active_ws['id'] if active_ws else None
+        
         # Auto-refresh timer
         self.timer = QTimer(self)
-        self.timer.timeout.connect(self.refresh_workspaces)
-        self.timer.start(5000) # Refresh every 5 seconds
+        self.timer.timeout.connect(self.check_workspace_change)
+        self.timer.start(1000) # Check more frequently for responsiveness
+
+    def check_workspace_change(self):
+        if self.is_exploding:
+            return
+            
+        active_ws = self.hypr.get_active_workspace()
+        if active_ws and active_ws['id'] != self.last_workspace_id:
+            self.close()
+        
+        self.refresh_workspaces()
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -74,9 +89,12 @@ class MainWindow(QMainWindow):
         if not active_ws:
             return
         original_ws_id = active_ws['id']
+        
+        self.is_exploding = True
 
         windows = self.hypr.get_active_workspace_windows()
         if not windows:
+            self.is_exploding = False
             return
 
         # Get existing IDs to find empty ones
@@ -117,6 +135,7 @@ class MainWindow(QMainWindow):
             self.config.set_original_title(new_ws_id, win_title)
             
         self.hypr.switch_to_workspace(original_ws_id)
+        self.is_exploding = False
         self.refresh_workspaces()
 
     def apply_settings(self):
