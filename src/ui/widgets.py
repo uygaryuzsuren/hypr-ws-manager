@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton, QLineEdit, QStackedWidget
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton, QLineEdit, QStackedWidget, QSizePolicy
 from PySide6.QtCore import Signal, Qt
 
 class WorkspaceItem(QWidget):
@@ -19,25 +19,30 @@ class WorkspaceItem(QWidget):
         self.layout.setContentsMargins(5, 5, 5, 5)
 
         self.stack = QStackedWidget()
-        
+
         # Display Mode
         self.display_widget = QWidget()
+        self.display_widget.setStyleSheet("background-color: transparent;")
+        self.display_widget.setMouseTracking(True)
         self.display_layout = QHBoxLayout(self.display_widget)
         self.display_layout.setContentsMargins(0, 0, 0, 0)
-        
+
         self.label = QLabel(self.display_name)
-        self.label.setStyleSheet("font-size: 14px;")
+        self.label.setStyleSheet("font-size: 12px; color: #cdd6f4;")
+        self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.label.setMouseTracking(True)
         self.display_layout.addWidget(self.label)
-        
-        self.display_layout.addStretch()
-        
+
         self.edit_btn = QPushButton("✎")
         self.edit_btn.setFixedSize(30, 30)
+        self.edit_btn.setStyleSheet("background-color: #45475a; color: #cdd6f4; border-radius: 5px;")
         self.edit_btn.clicked.connect(self.enter_edit_mode)
-        self.edit_btn.hide()
+        self.edit_btn.setMouseTracking(True)
+        # self.edit_btn.hide() 
         self.display_layout.addWidget(self.edit_btn)
-        
+
         self.stack.addWidget(self.display_widget)
+
         
         # Edit Mode
         self.edit_widget = QWidget()
@@ -62,6 +67,7 @@ class WorkspaceItem(QWidget):
         
         self.layout.addWidget(self.stack)
 
+
     def enter_edit_mode(self):
         self.line_edit.setText(self.display_name)
         self.stack.setCurrentIndex(1)
@@ -81,21 +87,10 @@ class WorkspaceItem(QWidget):
         self.stack.setCurrentIndex(0)
         self.editing_finished.emit()
 
-    def mousePressEvent(self, event):
-        # Only emit clicked if the user didn't click on the edit button area
-        # Check if the click is within the edit_btn bounds
-        if self.edit_btn.isVisible() and self.edit_btn.geometry().contains(event.pos()):
-            return
-        
-        if event.button() == Qt.LeftButton and self.stack.currentIndex() == 0:
-            self.clicked.emit(self.ws_id)
-        super().mousePressEvent(event)
+    def show_edit_btn(self):
+        self.edit_btn.setVisible(True)
+        self.update()
 
-    def enterEvent(self, event):
-        if self.stack.currentIndex() == 0:
-            self.edit_btn.show()
-        super().enterEvent(event)
-
-    def leaveEvent(self, event):
-        self.edit_btn.hide()
-        super().leaveEvent(event)
+    def hide_edit_btn(self):
+        self.edit_btn.setVisible(False)
+        self.update()

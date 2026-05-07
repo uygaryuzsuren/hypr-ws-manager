@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLineEdit, QListWidget, QListWidgetItem, QPushButton, QLabel)
-from PySide6.QtCore import Qt, QTimer, QThread
+from PySide6.QtCore import Qt, QTimer, QThread, QEvent, QSize
 from src.ui.widgets import WorkspaceItem
 from src.ui.settings_window import SettingsWindow
 
@@ -12,9 +12,8 @@ class MainWindow(QMainWindow):
         self.is_editing = False
         self.is_exploding = False
         self.setWindowTitle("Hyprland Workspace Manager")
-        self.setFixedSize(450, 600)
+        self.setMinimumSize(800, 600)
 
-        # Set window flags for always on top and transparency
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
 
@@ -22,14 +21,12 @@ class MainWindow(QMainWindow):
         self.apply_settings()
         self.refresh_workspaces()
         
-        # Track active workspace for auto-close
         active_ws = self.hypr.get_active_workspace()
         self.last_workspace_id = active_ws['id'] if active_ws else None
         
-        # Auto-refresh timer
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.check_workspace_change)
-        self.timer.start(2000) # Check frequently for responsiveness
+        self.timer.start(2000)
 
     def check_workspace_change(self):
         if self.is_exploding:
@@ -43,27 +40,18 @@ class MainWindow(QMainWindow):
 
     def showEvent(self, event):
         super().showEvent(event)
-        # Use a tiny delay to ensure Hyprland has registered the window
         QTimer.singleShot(50, self.hypr.make_floating_and_center)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             self.close()
+        elif event.key() in (Qt.Key_Enter, Qt.Key_Return):
+            current_item = self.list_widget.currentItem()
+            if current_item:
+                ws_id = current_item.data(Qt.UserRole)
+                if ws_id:
+                    self.navigate_to_workspace(ws_id)
         super().keyPressEvent(event)
-
-    def on_item_hover(self, index):
-        self.hide_all_edit_buttons()
-        item = self.list_widget.itemFromIndex(index)
-        widget = self.list_widget.itemWidget(item)
-        if widget and hasattr(widget, 'show_edit_btn'):
-            widget.show_edit_btn()
-
-    def hide_all_edit_buttons(self):
-        for i in range(self.list_widget.count()):
-            item = self.list_widget.item(i)
-            widget = self.list_widget.itemWidget(item)
-            if widget and hasattr(widget, 'hide_edit_btn'):
-                widget.hide_edit_btn()
 
     def filter_workspaces(self):
         self.refresh_workspaces()
@@ -73,7 +61,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
         self.main_layout = QVBoxLayout(central_widget)
 
-        # Top bar
         top_layout = QHBoxLayout()
         self.search_bar = QLineEdit()
         self.search_bar.setPlaceholderText("Search workspaces...")
@@ -87,19 +74,15 @@ class MainWindow(QMainWindow):
         
         self.main_layout.addLayout(top_layout)
 
-        # Workspace list
         self.list_widget = QListWidget()
         self.list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.list_widget.setMouseTracking(True)
-        self.list_widget.viewport().setMouseTracking(True)
-        self.list_widget.entered.connect(self.on_item_hover)
+        self.list_widget.itemClicked.connect(self.on_item_clicked)
         self.main_layout.addWidget(self.list_widget)
 
         explode_layout = QHBoxLayout()
         self.explode_btn = QPushButton("Explode")
         self.explode_btn.clicked.connect(self.on_explode_all)
         explode_layout.addWidget(self.explode_btn)
-
 
         self.explode_app_btn = QPushButton("Explode by App")
         self.explode_app_btn.clicked.connect(self.on_explode_by_app)
@@ -112,20 +95,7 @@ class MainWindow(QMainWindow):
         self.token_input = QLineEdit()
         self.token_input.setPlaceholderText("Token...")
         self.token_input.setFixedWidth(80)
-        self.token_input.hide()
         explode_layout.addWidget(self.token_input)
-
-        # Timer to delay hiding the input
-        self.hide_timer = QTimer(self)
-        self.hide_timer.setSingleShot(True)
-        self.hide_timer.timeout.connect(lambda: self.token_input.hide() if not self.token_input.hasFocus() else None)
-
-        # Hover logic
-        self.explode_token_btn.enterEvent = self.show_token_input
-        self.explode_token_btn.leaveEvent = self.start_hide_timer
-        self.token_input.enterEvent = lambda event: self.hide_timer.stop()
-        self.token_input.leaveEvent = self.start_hide_timer
-        self.token_input.focusOutEvent = lambda event: self.token_input.hide()
         
         self.main_layout.addLayout(explode_layout)
 
@@ -134,6 +104,17 @@ class MainWindow(QMainWindow):
         self.error_label.setStyleSheet("color: #f38ba8; font-weight: bold;")
         self.error_label.hide()
         self.main_layout.addWidget(self.error_label)
+
+    def open_settings(self):
+        dialog = SettingsWindow(self.config, self)
+        if dialog.exec():
+            self.apply_settings()
+            self.hypr.hyprctl_path = self.config.hyprctl_path
+            self.refresh_workspaces()
+
+    def navigate_to_workspace(self, ws_id):
+        self.hypr.switch_to_workspace(ws_id)
+        self.close()
 
     def on_explode_by_app(self):
         active_ws = self.hypr.get_active_workspace()
@@ -183,13 +164,6 @@ class MainWindow(QMainWindow):
         self.hypr.switch_to_workspace(original_ws_id)
         self.is_exploding = False
         self.refresh_workspaces()
-
-    def show_token_input(self, event):
-        self.hide_timer.stop()
-        self.token_input.show()
-
-    def start_hide_timer(self, event):
-        self.hide_timer.start(500)
 
     def on_explode_by_token(self):
         token = self.token_input.text().strip()
@@ -250,10 +224,8 @@ class MainWindow(QMainWindow):
             self.is_exploding = False
             return
 
-        # Get existing IDs to find empty ones
         existing_ids = self.hypr.get_existing_workspace_ids()
         
-        # Start looking for empty workspaces from ID 1
         available_ws_ids = []
         candidate_id = 1
         while len(available_ws_ids) < len(windows):
@@ -269,18 +241,13 @@ class MainWindow(QMainWindow):
             if not win_title:
                 win_title = f"Window_{win_class}"
             
-            # Sanitise title
             import re
             clean_title = re.sub(r'[^a-zA-Z0-9_-]', ' ', win_title)
             clean_title = re.sub(r'\s+', ' ', clean_title).strip().replace(" ", "_")
-            
-            # Sanitise class
             clean_class = re.sub(r'[^a-zA-Z0-9_-]', '_', win_class)
             
-            # Format: [APP_CLASS]-Original_Title (ID is managed by Hyprland, not needed in name)
             name = f"[{clean_class}]-{clean_title}"
             
-            # Create/switch to workspace so it exists, then move and rename
             self.hypr.switch_to_workspace(new_ws_id)
             self.hypr.move_window_to_workspace(win_addr, new_ws_id)
             QThread.msleep(100)
@@ -293,7 +260,6 @@ class MainWindow(QMainWindow):
         self.refresh_workspaces()
 
     def apply_settings(self):
-        # We handle opacity via rgba in the CSS instead of setWindowOpacity
         alpha = int(self.config.transparency * 255)
         
         if self.config.theme == "dark":
@@ -301,6 +267,7 @@ class MainWindow(QMainWindow):
                 QMainWindow, QWidget {{ background-color: rgba(30, 30, 46, {alpha}); color: #cdd6f4; }}
                 QLineEdit {{ background-color: rgba(49, 50, 68, {alpha}); border: 1px solid #45475a; border-radius: 5px; padding: 5px; color: #cdd6f4; }}
                 QListWidget {{ background-color: transparent; border: none; }}
+                QListWidget::item:hover {{ background-color: #313244; border-radius: 5px; }}
                 QPushButton {{ background-color: rgba(49, 50, 68, {alpha}); border: none; border-radius: 5px; color: #cdd6f4; padding: 8px 12px; }}
                 QPushButton:hover {{ background-color: #45475a; }}
             """)
@@ -309,22 +276,15 @@ class MainWindow(QMainWindow):
                 QMainWindow, QWidget {{ background-color: rgba(239, 241, 245, {alpha}); color: #4c4f69; }}
                 QLineEdit {{ background-color: rgba(230, 233, 239, {alpha}); border: 1px solid #ccd0da; border-radius: 5px; padding: 5px; color: #4c4f69; }}
                 QListWidget {{ background-color: transparent; border: none; }}
+                QListWidget::item:hover {{ background-color: #ccd0da; border-radius: 5px; }}
                 QPushButton {{ background-color: rgba(230, 233, 239, {alpha}); border: none; border-radius: 5px; color: #4c4f69; padding: 8px 12px; }}
                 QPushButton:hover {{ background-color: #ccd0da; }}
             """)
-
-    def open_settings(self):
-        dialog = SettingsWindow(self.config, self)
-        if dialog.exec():
-            self.apply_settings()
-            self.hypr.hyprctl_path = self.config.hyprctl_path
-            self.refresh_workspaces()
 
     def cleanup_empty_workspaces(self, active_workspaces):
         active_ids = {str(ws['id']) for ws in active_workspaces}
         stored_names = self.config.data.get("workspace_names", {})
         
-        # Find IDs that are in config but not in active workspaces
         to_remove = [ws_id for ws_id in stored_names if ws_id not in active_ids]
         
         for ws_id in to_remove:
@@ -334,8 +294,11 @@ class MainWindow(QMainWindow):
         if self.is_editing:
             return
 
-        # Store current search text
         search_text = self.search_bar.text().lower()
+        
+        # Save currently selected workspace ID
+        current_item = self.list_widget.currentItem()
+        selected_ws_id = current_item.data(Qt.UserRole) if current_item else None
         
         workspaces = self.hypr.get_workspaces()
         self.cleanup_empty_workspaces(workspaces)
@@ -348,37 +311,33 @@ class MainWindow(QMainWindow):
         self.list_widget.show()
         self.error_label.hide()
 
-        # Sort by ID
         workspaces.sort(key=lambda x: x['id'])
         
         self.list_widget.clear()
+        reselected_item = None
         for ws in workspaces:
             ws_id = ws['id']
-            # We want to display: ID-Name
-            # Get the sanitized name (which now holds [Class]-Title)
+            # Get sanitized name (for Hyprland) and original title (for UI)
             sanitized_name = self.config.get_workspace_name(ws_id)
-            
-            # Use original title for better readability if available
             original_title = self.config.get_original_title(ws_id)
             
+            # Formatting display: ID-[APP_CLASS]-Original_Title (truncated for display only)
             if sanitized_name:
                 import re
                 match = re.search(r'\[(.*?)\]', sanitized_name)
                 app_class = match.group(1) if match else "Unknown"
                 
-                if original_title:
-                    display_name = f"{ws_id}-[{app_class}]-{original_title}"
-                else:
-                    display_name = f"{ws_id}-{sanitized_name}"
+                title_to_show = original_title if original_title else sanitized_name
+                display_name = f"{ws_id}-[{app_class}]-{title_to_show}"
             else:
                 display_name = str(ws_id)
             
             if search_text and search_text not in display_name.lower():
                 continue
                 
-            item = QListWidgetItem(self.list_widget)
+            item = QListWidgetItem("")
+            item.setData(Qt.UserRole, ws_id)
             widget = WorkspaceItem(ws_id, display_name)
-            widget.clicked.connect(self.navigate_to_workspace)
             widget.renamed.connect(self.rename_workspace)
             widget.editing_started.connect(self.on_editing_started)
             widget.editing_finished.connect(self.on_editing_finished)
@@ -386,30 +345,15 @@ class MainWindow(QMainWindow):
             item.setSizeHint(widget.sizeHint())
             self.list_widget.addItem(item)
             self.list_widget.setItemWidget(item, widget)
-    def on_item_hover(self, index):
-        self.hide_all_edit_buttons()
-        item = self.list_widget.itemFromIndex(index)
-        widget = self.list_widget.itemWidget(item)
-        if widget and hasattr(widget, 'show_edit_btn'):
-            widget.show_edit_btn()
-
-    def hide_all_edit_buttons(self):
-        for i in range(self.list_widget.count()):
-            item = self.list_widget.item(i)
-            widget = self.list_widget.itemWidget(item)
-            if widget and hasattr(widget, 'hide_edit_btn'):
-                widget.hide_edit_btn()
-
-    def filter_workspaces(self):
-        self.refresh_workspaces()
-
-    def navigate_to_workspace(self, ws_id):
-        self.hypr.switch_to_workspace(ws_id)
-        self.close()
+            
+            if ws_id == selected_ws_id:
+                reselected_item = item
+        
+        if reselected_item:
+            self.list_widget.setCurrentItem(reselected_item)
 
     def rename_workspace(self, ws_id, new_name):
         self.config.set_workspace_name(ws_id, new_name)
-        # Also update original_titles so refresh_workspaces picks up the new name
         self.config.set_original_title(ws_id, new_name)
         self.filter_workspaces()
 
@@ -421,3 +365,13 @@ class MainWindow(QMainWindow):
         self.is_editing = False
         self.timer.start(5000)
 
+    def on_item_clicked(self, item):
+        print(f"DEBUG: on_item_clicked called with {item}")
+        ws_id = item.data(Qt.UserRole)
+        print(f"DEBUG: ws_id={ws_id}")
+        if ws_id:
+            self.navigate_to_workspace(ws_id)
+
+    def navigate_to_workspace(self, ws_id):
+        self.hypr.switch_to_workspace(ws_id)
+        self.close()
