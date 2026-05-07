@@ -3,6 +3,7 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
 from PySide6.QtCore import Qt, QTimer, QThread, QEvent, QSize
 from src.ui.widgets import WorkspaceItem
 from src.ui.settings_window import SettingsWindow
+from src import __version__
 
 class MainWindow(QMainWindow):
     def __init__(self, config, hypr):
@@ -11,7 +12,7 @@ class MainWindow(QMainWindow):
         self.hypr = hypr
         self.is_editing = False
         self.is_exploding = False
-        self.setWindowTitle("Hyprland Workspace Manager")
+        self.setWindowTitle(f"Hyprland Workspace Manager {__version__}")
         self.setMinimumSize(800, 600)
 
         self.setAttribute(Qt.WA_TranslucentBackground)

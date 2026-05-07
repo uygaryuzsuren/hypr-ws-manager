@@ -1,5 +1,6 @@
 # Hyprland Workspace Manager
 
+![Version](https://img.shields.io/badge/version-0.9.0--beta-orange)
 A lightweight Python GUI for managing, naming, and navigating Hyprland workspaces.
 
 ![App Icon](assets/icon.svg)
