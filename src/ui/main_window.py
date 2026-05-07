@@ -321,7 +321,8 @@ class MainWindow(QMainWindow):
             # Find all window classes in this workspace
             all_wins = self.hypr.get_all_windows()
             wins = [w for w in all_wins if int(w['workspace']['id']) == int(ws_id)]
-            app_classes = list(set([w['class'].lower() for w in wins])) if wins else []
+            # Exclude hypr-ws-manager itself from the icons
+            app_classes = [w['class'].lower() for w in wins if w['class'] != "hypr-ws-manager"] if wins else []
             
             sanitized_name = self.config.get_workspace_name(ws_id)
             original_title = self.config.get_original_title(ws_id)
