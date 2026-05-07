@@ -25,14 +25,32 @@ VENV_DIR=".venv"
 
 # Create virtual environment if it doesn't exist
 if [ ! -d "$VENV_DIR" ]; then
-    echo "Creating virtual environment in $VENV_DIR using $PYTHON_CMD..."
+    echo "-------------------------------------------------------"
+    echo "  Hyprland Workspace Manager - First Run Setup"
+    echo "-------------------------------------------------------"
+    echo "Creating virtual environment and installing dependencies..."
+    echo "This may take a minute. Please wait..."
+    
+    # Show a notification with the logo if notify-send is available
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send "Hyprland Workspace Manager" "Installing dependencies...\nPlease wait while we set things up." -i "$DIR/assets/icon.svg" -t 10000
+    fi
+    
+    # Fallback/Additional Hyprland notification
+    if command -v hyprctl >/dev/null 2>&1; then
+        hyprctl notify 1 10000 "rgb(4c4f69)" "Installing dependencies... Please wait."
+    fi
+
     $PYTHON_CMD -m venv "$VENV_DIR"
     
     # Activate and install requirements immediately after creation
     source "$VENV_DIR/bin/activate"
-    echo "Installing dependencies..."
     pip install --upgrade pip
     pip install -r requirements.txt
+    
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send "Hyprland Workspace Manager" "Setup complete! Launching app..." -i "$DIR/assets/icon.svg" -t 3000
+    fi
 else
     # Activate existing environment
     source "$VENV_DIR/bin/activate"
