@@ -98,10 +98,11 @@ class MainWindow(QMainWindow):
         self.explode_token_btn.clicked.connect(self.on_explode_by_token)
         explode_layout.addWidget(self.explode_token_btn)
         
-        self.token_input = QLineEdit()
-        self.token_input.setPlaceholderText("Token...")
-        self.token_input.setFixedWidth(80)
-        explode_layout.addWidget(self.token_input)
+        self.token_input_explode = QLineEdit()
+        self.token_input_explode.setPlaceholderText("Token...")
+        self.token_input_explode.setFixedWidth(80)
+        self.token_input_explode.hide()
+        explode_layout.addWidget(self.token_input_explode)
         
         self.main_layout.addLayout(explode_layout)
 
@@ -114,15 +115,34 @@ class MainWindow(QMainWindow):
         self.collect_app_btn.clicked.connect(self.on_collect_by_app)
         collect_layout.addWidget(self.collect_app_btn)
 
+        self.app_selector = QComboBox()
+        self.app_selector.setMinimumWidth(150)
+        self.app_selector.hide()
+        collect_layout.addWidget(self.app_selector)
+
         self.collect_token_btn = QPushButton("Collect by Token")
         self.collect_token_btn.clicked.connect(self.on_collect_by_token)
         collect_layout.addWidget(self.collect_token_btn)
 
-        self.app_selector = QComboBox()
-        self.app_selector.setMinimumWidth(150)
-        collect_layout.addWidget(self.app_selector)
+        self.token_input_collect = QLineEdit()
+        self.token_input_collect.setPlaceholderText("Token...")
+        self.token_input_collect.setFixedWidth(80)
+        self.token_input_collect.hide()
+        collect_layout.addWidget(self.token_input_collect)
         
         self.main_layout.addLayout(collect_layout)
+
+        # Sync inputs
+        self.token_input_explode.textChanged.connect(self.token_input_collect.setText)
+        self.token_input_collect.textChanged.connect(self.token_input_explode.setText)
+
+        # Install event filters for hover
+        self.explode_token_btn.installEventFilter(self)
+        self.token_input_explode.installEventFilter(self)
+        self.collect_app_btn.installEventFilter(self)
+        self.app_selector.installEventFilter(self)
+        self.collect_token_btn.installEventFilter(self)
+        self.token_input_collect.installEventFilter(self)
 
         self.error_label = QLabel("No workspaces found. Is Hyprland running?")
         self.error_label.setAlignment(Qt.AlignCenter)
@@ -199,7 +219,7 @@ class MainWindow(QMainWindow):
         self.refresh_workspaces()
 
     def on_explode_by_token(self):
-        token = self.token_input.text().strip()
+        token = self.token_input_explode.text().strip()
         if not token:
             return
 
@@ -358,7 +378,7 @@ class MainWindow(QMainWindow):
         self.refresh_workspaces()
 
     def on_collect_by_token(self):
-        token = self.token_input.text().strip()
+        token = self.token_input_collect.text().strip()
         if not token:
             return
 
@@ -389,6 +409,8 @@ class MainWindow(QMainWindow):
             self.setStyleSheet(f"""
                 QMainWindow, QWidget {{ background-color: rgba(30, 30, 46, {alpha}); color: #cdd6f4; }}
                 QLineEdit {{ background-color: rgba(49, 50, 68, {alpha}); border: 1px solid #45475a; border-radius: 5px; padding: 5px; color: #cdd6f4; }}
+                QComboBox {{ background-color: rgba(49, 50, 68, {alpha}); border: 1px solid #45475a; border-radius: 5px; padding: 5px 10px; color: #cdd6f4; }}
+                QComboBox::drop-down {{ border: none; }}
                 QListWidget {{ background-color: transparent; border: none; }}
                 QListWidget::item:hover {{ background-color: #313244; border-radius: 5px; }}
                 QPushButton {{ background-color: rgba(49, 50, 68, {alpha}); border: none; border-radius: 5px; color: #cdd6f4; padding: 8px 12px; }}
@@ -398,6 +420,8 @@ class MainWindow(QMainWindow):
             self.setStyleSheet(f"""
                 QMainWindow, QWidget {{ background-color: rgba(239, 241, 245, {alpha}); color: #4c4f69; }}
                 QLineEdit {{ background-color: rgba(230, 233, 239, {alpha}); border: 1px solid #ccd0da; border-radius: 5px; padding: 5px; color: #4c4f69; }}
+                QComboBox {{ background-color: rgba(204, 208, 218, {alpha}); border: 1px solid #ccd0da; border-radius: 5px; padding: 5px 10px; color: #4c4f69; }}
+                QComboBox::drop-down {{ border: none; }}
                 QListWidget {{ background-color: transparent; border: none; }}
                 QListWidget::item:hover {{ background-color: #ccd0da; border-radius: 5px; }}
                 QPushButton {{ background-color: rgba(204, 208, 218, {alpha}); border: none; border-radius: 5px; color: #4c4f69; padding: 8px 12px; }}
@@ -529,7 +553,7 @@ class MainWindow(QMainWindow):
             self.list_widget.setCurrentItem(target_item)
             self.list_widget.scrollToItem(target_item)
             # Only steal focus back to list if no input is currently focused
-            if not self.search_bar.hasFocus() and not self.token_input.hasFocus():
+            if not self.search_bar.hasFocus() and not self.token_input_explode.hasFocus() and not self.token_input_collect.hasFocus():
                 self.list_widget.setFocus()
 
     def rename_workspace(self, ws_id, new_name):
@@ -556,3 +580,39 @@ class MainWindow(QMainWindow):
     def _finish_editing_state(self):
         self.is_editing = False
         self.timer.start(5000)
+
+    def eventFilter(self, source, event):
+        # Handle hover-to-reveal for token inputs and app selector
+        if event.type() == QEvent.Enter:
+            if source is self.explode_token_btn or source is self.token_input_explode:
+                self.token_input_explode.show()
+            elif source is self.collect_app_btn or source is self.app_selector:
+                self.app_selector.show()
+            elif source is self.collect_token_btn or source is self.token_input_collect:
+                self.collect_token_btn.show() # Safety, but not strictly needed
+                self.token_input_collect.show()
+                
+        elif event.type() == QEvent.Leave:
+            if source is self.explode_token_btn or source is self.token_input_explode:
+                QTimer.singleShot(100, self.update_dynamic_visibility)
+            elif source is self.collect_app_btn or source is self.app_selector:
+                QTimer.singleShot(100, self.update_dynamic_visibility)
+            elif source is self.collect_token_btn or source is self.token_input_collect:
+                QTimer.singleShot(100, self.update_dynamic_visibility)
+                
+        return super().eventFilter(source, event)
+
+    def update_dynamic_visibility(self):
+        # Explode row
+        if not self.token_input_explode.hasFocus() and not self.explode_token_btn.underMouse() and not self.token_input_explode.underMouse():
+            self.token_input_explode.hide()
+        
+        # Collect row - App Selector
+        # Also check if the dropdown view itself is visible
+        view_visible = self.app_selector.view().isVisible() if self.app_selector.view() else False
+        if not self.app_selector.hasFocus() and not self.collect_app_btn.underMouse() and not self.app_selector.underMouse() and not view_visible:
+            self.app_selector.hide()
+
+        # Collect row - Token Input
+        if not self.token_input_collect.hasFocus() and not self.collect_token_btn.underMouse() and not self.token_input_collect.underMouse():
+            self.token_input_collect.hide()

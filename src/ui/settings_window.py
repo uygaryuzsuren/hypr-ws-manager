@@ -11,7 +11,30 @@ class SettingsWindow(QDialog):
         self.config = config
         self.setWindowTitle("Settings")
         self.setMinimumWidth(400)
+        self.apply_theme()
         self.setup_ui()
+
+    def apply_theme(self):
+        if self.config.theme == "dark":
+            self.setStyleSheet("""
+                QDialog { background-color: #1e1e2e; color: #cdd6f4; }
+                QLabel { color: #cdd6f4; }
+                QLineEdit { background-color: #313244; border: 1px solid #45475a; border-radius: 5px; padding: 5px; color: #cdd6f4; }
+                QComboBox { background-color: #313244; border: 1px solid #45475a; border-radius: 5px; padding: 5px 10px; color: #cdd6f4; }
+                QComboBox::drop-down { border: none; }
+                QPushButton { background-color: #313244; border: none; border-radius: 5px; color: #cdd6f4; padding: 8px 12px; }
+                QPushButton:hover { background-color: #45475a; }
+            """)
+        else:
+            self.setStyleSheet("""
+                QDialog { background-color: #eff1f5; color: #4c4f69; }
+                QLabel { color: #4c4f69; }
+                QLineEdit { background-color: #e6e9ef; border: 1px solid #ccd0da; border-radius: 5px; padding: 5px; color: #4c4f69; }
+                QComboBox { background-color: #e6e9ef; border: 1px solid #ccd0da; border-radius: 5px; padding: 5px 10px; color: #4c4f69; }
+                QComboBox::drop-down { border: none; }
+                QPushButton { background-color: #ccd0da; border: none; border-radius: 5px; color: #4c4f69; padding: 8px 12px; }
+                QPushButton:hover { background-color: #bcc0cc; }
+            """)
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
