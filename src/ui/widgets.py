@@ -9,17 +9,22 @@ class WorkspaceItem(QWidget):
     editing_started = Signal()
     editing_finished = Signal()
 
-    def __init__(self, ws_id, display_name, app_classes=None, parent=None):
+    def __init__(self, ws_id, display_name, app_classes=None, is_active=False, parent=None):
         super().__init__(parent)
         self.ws_id = ws_id
         self.display_name = display_name
         self.app_classes = app_classes if app_classes else []
+        self.is_active = is_active
         self.setMouseTracking(True)
         self.setup_ui()
 
     def setup_ui(self):
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(5, 5, 5, 5)
+        
+        if self.is_active:
+            # Subtle highlight for active workspace (Catppuccin Blue at 15% opacity)
+            self.setStyleSheet("background-color: rgba(137, 180, 250, 0.15); border-radius: 5px;")
 
         self.stack = QStackedWidget()
         

@@ -304,6 +304,9 @@ class MainWindow(QMainWindow):
         workspaces = self.hypr.get_workspaces()
         self.cleanup_empty_workspaces(workspaces)
         
+        active_ws = self.hypr.get_active_workspace()
+        active_id = active_ws['id'] if active_ws else None
+        
         if not workspaces:
             self.list_widget.hide()
             self.error_label.show()
@@ -363,7 +366,7 @@ class MainWindow(QMainWindow):
                 
             item = QListWidgetItem("")
             item.setData(Qt.UserRole, ws_id)
-            widget = WorkspaceItem(ws_id, display_name, app_classes=app_classes)
+            widget = WorkspaceItem(ws_id, display_name, app_classes=app_classes, is_active=(ws_id == active_id))
             widget.clicked.connect(self.navigate_to_workspace)
             widget.renamed.connect(self.rename_workspace)
             widget.editing_started.connect(self.on_editing_started)
