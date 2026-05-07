@@ -1,7 +1,6 @@
 import subprocess
 import json
 import logging
-import time
 
 class HyprManager:
     def __init__(self, hyprctl_path="hyprctl"):
@@ -44,14 +43,12 @@ class HyprManager:
         return None
 
     def make_floating_and_center(self):
-        """Forces the workspace manager window to float and center using class selector."""
-        # 'class' in hyprctl corresponds to the app_id in Wayland
+        """Forces the workspace manager window to float, center, and resize."""
         selector = "class:^hypr-ws-manager$"
         self._run_command(["dispatch", "setfloating", selector])
+        self._run_command(["dispatch", "resizewindowpixel", "exact 400 600", selector])
         self._run_command(["dispatch", "centerwindow", selector])
         self._run_command(["dispatch", "pin", selector])
-        time.sleep(1.0)
-        self._run_command(["dispatch", "resizewindowpixel", "600", "600", selector])
 
     def get_active_workspace_windows(self):
         output = self._run_command(["clients", "-j"])
