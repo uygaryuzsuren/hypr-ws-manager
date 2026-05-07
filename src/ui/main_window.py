@@ -275,12 +275,12 @@ class MainWindow(QMainWindow):
             """)
         else:
             self.setStyleSheet(f"""
-                QMainWindow, QWidget {{ background-color: rgba(239, 241, 245, {alpha}); color: #cdd6f4; }}
+                QMainWindow, QWidget {{ background-color: rgba(239, 241, 245, {alpha}); color: #4c4f69; }}
                 QLineEdit {{ background-color: rgba(230, 233, 239, {alpha}); border: 1px solid #ccd0da; border-radius: 5px; padding: 5px; color: #4c4f69; }}
                 QListWidget {{ background-color: transparent; border: none; }}
                 QListWidget::item:hover {{ background-color: #ccd0da; border-radius: 5px; }}
-                QPushButton {{ background-color: rgba(230, 233, 239, {alpha}); border: none; border-radius: 5px; color: #4c4f69; padding: 8px 12px; }}
-                QPushButton:hover {{ background-color: #ccd0da; }}
+                QPushButton {{ background-color: rgba(204, 208, 218, {alpha}); border: none; border-radius: 5px; color: #4c4f69; padding: 8px 12px; }}
+                QPushButton:hover {{ background-color: #bcc0cc; }}
             """)
 
     def cleanup_empty_workspaces(self, active_workspaces):
@@ -319,6 +319,8 @@ class MainWindow(QMainWindow):
         
         self.list_widget.clear()
         reselected_item = None
+        active_item = None
+        
         for ws in workspaces:
             ws_id = ws['id']
             # Find all window classes in this workspace
@@ -366,7 +368,7 @@ class MainWindow(QMainWindow):
                 
             item = QListWidgetItem("")
             item.setData(Qt.UserRole, ws_id)
-            widget = WorkspaceItem(ws_id, display_name, app_classes=app_classes, is_active=(ws_id == active_id))
+            widget = WorkspaceItem(ws_id, display_name, app_classes=app_classes, is_active=(ws_id == active_id), theme=self.config.theme)
             widget.clicked.connect(self.navigate_to_workspace)
             widget.renamed.connect(self.rename_workspace)
             widget.editing_started.connect(self.on_editing_started)
@@ -376,11 +378,17 @@ class MainWindow(QMainWindow):
             self.list_widget.addItem(item)
             self.list_widget.setItemWidget(item, widget)
             
-            if ws_id == selected_ws_id:
+            if ws_id == active_id:
+                active_item = item
+            if selected_ws_id and ws_id == selected_ws_id:
                 reselected_item = item
         
-        if reselected_item:
-            self.list_widget.setCurrentItem(reselected_item)
+        # Priority: reselect previously selected, then focus active workspace
+        target_item = reselected_item or active_item
+        if target_item:
+            self.list_widget.setCurrentItem(target_item)
+            self.list_widget.scrollToItem(target_item)
+            self.list_widget.setFocus()
 
     def rename_workspace(self, ws_id, new_name):
         import re

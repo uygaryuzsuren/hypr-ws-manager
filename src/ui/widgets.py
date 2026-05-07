@@ -9,12 +9,13 @@ class WorkspaceItem(QWidget):
     editing_started = Signal()
     editing_finished = Signal()
 
-    def __init__(self, ws_id, display_name, app_classes=None, is_active=False, parent=None):
+    def __init__(self, ws_id, display_name, app_classes=None, is_active=False, theme="dark", parent=None):
         super().__init__(parent)
         self.ws_id = ws_id
         self.display_name = display_name
         self.app_classes = app_classes if app_classes else []
         self.is_active = is_active
+        self.theme = theme
         self.setMouseTracking(True)
         self.setup_ui()
 
@@ -23,8 +24,9 @@ class WorkspaceItem(QWidget):
         self.layout.setContentsMargins(5, 5, 5, 5)
         
         if self.is_active:
-            # Subtle highlight for active workspace (Catppuccin Blue at 15% opacity)
-            self.setStyleSheet("background-color: rgba(137, 180, 250, 0.15); border-radius: 5px;")
+            # Active workspace highlight
+            active_bg = "rgba(137, 180, 250, 0.15)" if self.theme == "dark" else "rgba(30, 102, 245, 0.15)"
+            self.setStyleSheet(f"background-color: {active_bg}; border-radius: 5px;")
 
         self.stack = QStackedWidget()
         
@@ -55,13 +57,16 @@ class WorkspaceItem(QWidget):
 
         self.label = QLabel(self.display_name)
         self.label.setAttribute(Qt.WA_TransparentForMouseEvents)
-        self.label.setStyleSheet("font-size: 12px; color: #cdd6f4;")
+        text_color = "#cdd6f4" if self.theme == "dark" else "#4c4f69"
+        self.label.setStyleSheet(f"font-size: 12px; color: {text_color};")
         self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.display_layout.addWidget(self.label)
         
         self.edit_btn = QPushButton("✎")
         self.edit_btn.setFixedSize(30, 30)
-        self.edit_btn.setStyleSheet("background-color: #45475a; color: #cdd6f4; border-radius: 5px;")
+        # Button style should follow global theme but we can ensure it here if needed
+        btn_bg = "#45475a" if self.theme == "dark" else "#bcc0cc"
+        self.edit_btn.setStyleSheet(f"background-color: {btn_bg}; color: {text_color}; border-radius: 5px;")
         self.edit_btn.clicked.connect(self.enter_edit_mode)
         self.display_layout.addWidget(self.edit_btn)
         
