@@ -46,13 +46,11 @@ class MainWindow(QMainWindow):
         if event.key() == Qt.Key_Escape:
             self.close()
         elif event.key() in (Qt.Key_Enter, Qt.Key_Return):
-            # Only navigate if not editing and an item is selected
-            if not self.is_editing:
-                current_item = self.list_widget.currentItem()
-                if current_item:
-                    ws_id = current_item.data(Qt.UserRole)
-                    if ws_id:
-                        self.navigate_to_workspace(ws_id)
+            current_item = self.list_widget.currentItem()
+            if current_item:
+                ws_id = current_item.data(Qt.UserRole)
+                if ws_id:
+                    self.navigate_to_workspace(ws_id)
         super().keyPressEvent(event)
 
     def filter_workspaces(self):
@@ -78,7 +76,6 @@ class MainWindow(QMainWindow):
 
         self.list_widget = QListWidget()
         self.list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.list_widget.itemClicked.connect(self.on_item_clicked)
         self.main_layout.addWidget(self.list_widget)
 
         explode_layout = QHBoxLayout()
@@ -124,7 +121,8 @@ class MainWindow(QMainWindow):
             return
         original_ws_id = active_ws['id']
         
-        windows = self.hypr.get_active_workspace_windows()
+        all_windows = self.hypr.get_all_windows()
+        windows = [w for w in all_windows if int(w['workspace']['id']) == original_ws_id]
         if not windows:
             return
 
@@ -177,7 +175,8 @@ class MainWindow(QMainWindow):
             return
         original_ws_id = active_ws['id']
         
-        windows = self.hypr.get_active_workspace_windows()
+        all_windows = self.hypr.get_all_windows()
+        windows = [w for w in all_windows if int(w['workspace']['id']) == original_ws_id]
         group = [win for win in windows if token.lower() in win['title'].lower()]
         
         if not group:
@@ -221,7 +220,8 @@ class MainWindow(QMainWindow):
         
         self.is_exploding = True
 
-        windows = self.hypr.get_active_workspace_windows()
+        all_windows = self.hypr.get_all_windows()
+        windows = [w for w in all_windows if int(w['workspace']['id']) == original_ws_id]
         if not windows:
             self.is_exploding = False
             return
@@ -275,7 +275,7 @@ class MainWindow(QMainWindow):
             """)
         else:
             self.setStyleSheet(f"""
-                QMainWindow, QWidget {{ background-color: rgba(239, 241, 245, {alpha}); color: #4c4f69; }}
+                QMainWindow, QWidget {{ background-color: rgba(239, 241, 245, {alpha}); color: #cdd6f4; }}
                 QLineEdit {{ background-color: rgba(230, 233, 239, {alpha}); border: 1px solid #ccd0da; border-radius: 5px; padding: 5px; color: #4c4f69; }}
                 QListWidget {{ background-color: transparent; border: none; }}
                 QListWidget::item:hover {{ background-color: #ccd0da; border-radius: 5px; }}
@@ -298,7 +298,6 @@ class MainWindow(QMainWindow):
 
         search_text = self.search_bar.text().lower()
         
-        # Save currently selected workspace ID
         current_item = self.list_widget.currentItem()
         selected_ws_id = current_item.data(Qt.UserRole) if current_item else None
         
@@ -319,34 +318,47 @@ class MainWindow(QMainWindow):
         reselected_item = None
         for ws in workspaces:
             ws_id = ws['id']
+            # Find the first window's class in this workspace
+            all_wins = self.hypr.get_all_windows()
+            wins = [w for w in all_wins if int(w['workspace']['id']) == int(ws_id)]
+            app_class = wins[0]['class'].lower() if wins else None
+            
             # Get sanitized name (for Hyprland) and original title (for UI)
             sanitized_name = self.config.get_workspace_name(ws_id)
             original_title = self.config.get_original_title(ws_id)
             
-            # Formatting display: ID-[APP_CLASS]-Original_Title (truncated for display only)
+            # Formatting display: ID-[APP_CLASS]-Original_Title
             if sanitized_name:
                 import re
                 match = re.search(r'\[(.*?)\]', sanitized_name)
-                app_class = match.group(1) if match else "Unknown"
+                # Ensure app_class comes from the window if possible, else the name tag
+                display_app_class = app_class or (match.group(1).lower() if match else "application-x-executable")
                 
                 title_to_show = original_title if original_title else sanitized_name
-                display_name = f"{ws_id}-[{app_class}]-{title_to_show}"
+                # Strip ID-[class]- if it's there
+                title_to_show = re.sub(r'^\d+-\[.*?\]-', '', title_to_show)
+                if len(title_to_show) > 80:
+                    title_to_show = title_to_show[:80] + "..."
+                display_name = f"{ws_id}-[{display_app_class}]-{title_to_show}"
             else:
-                display_name = str(ws_id)
+                display_app_class = app_class or "application-x-executable"
+                display_name = f"{ws_id}-[{display_app_class}]-{original_title if original_title else str(ws_id)}"
             
             if search_text and search_text not in display_name.lower():
                 continue
                 
             item = QListWidgetItem("")
             item.setData(Qt.UserRole, ws_id)
-            widget = WorkspaceItem(ws_id, display_name)
+            widget = WorkspaceItem(ws_id, display_name, app_class=app_class)
+            widget.clicked.connect(self.navigate_to_workspace)
             widget.renamed.connect(self.rename_workspace)
             widget.editing_started.connect(self.on_editing_started)
             widget.editing_finished.connect(self.on_editing_finished)
-            
+
             item.setSizeHint(widget.sizeHint())
             self.list_widget.addItem(item)
             self.list_widget.setItemWidget(item, widget)
+
             
             if ws_id == selected_ws_id:
                 reselected_item = item
@@ -366,14 +378,3 @@ class MainWindow(QMainWindow):
     def on_editing_finished(self):
         self.is_editing = False
         self.timer.start(5000)
-
-    def on_item_clicked(self, item):
-        print(f"DEBUG: on_item_clicked called with {item}")
-        ws_id = item.data(Qt.UserRole)
-        print(f"DEBUG: ws_id={ws_id}")
-        if ws_id:
-            self.navigate_to_workspace(ws_id)
-
-    def navigate_to_workspace(self, ws_id):
-        self.hypr.switch_to_workspace(ws_id)
-        self.close()

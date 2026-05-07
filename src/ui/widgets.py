@@ -1,5 +1,7 @@
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton, QLineEdit, QStackedWidget, QSizePolicy
 from PySide6.QtCore import Signal, Qt
+from PySide6.QtGui import QIcon, QPixmap
+import re
 
 class WorkspaceItem(QWidget):
     clicked = Signal(int)
@@ -7,10 +9,11 @@ class WorkspaceItem(QWidget):
     editing_started = Signal()
     editing_finished = Signal()
 
-    def __init__(self, ws_id, display_name, parent=None):
+    def __init__(self, ws_id, display_name, app_class=None, parent=None):
         super().__init__(parent)
         self.ws_id = ws_id
         self.display_name = display_name
+        self.app_class = app_class
         self.setMouseTracking(True)
         self.setup_ui()
 
@@ -23,27 +26,35 @@ class WorkspaceItem(QWidget):
         # Display Mode
         self.display_widget = QWidget()
         self.display_widget.setStyleSheet("background-color: transparent;")
-        self.display_widget.setMouseTracking(True)
         self.display_layout = QHBoxLayout(self.display_widget)
         self.display_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Icon
+        self.icon_label = QLabel()
+        icon = QIcon.fromTheme(self.app_class if self.app_class else "")
+        
+        if icon.isNull():
+            # Create a blank, transparent placeholder
+            placeholder = QPixmap(20, 20)
+            placeholder.fill(Qt.transparent)
+            self.icon_label.setPixmap(placeholder)
+        else:
+            self.icon_label.setPixmap(icon.pixmap(20, 20))
+        self.display_layout.addWidget(self.icon_label)
 
         self.label = QLabel(self.display_name)
         self.label.setStyleSheet("font-size: 12px; color: #cdd6f4;")
         self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.label.setMouseTracking(True)
         self.display_layout.addWidget(self.label)
 
         self.edit_btn = QPushButton("✎")
         self.edit_btn.setFixedSize(30, 30)
         self.edit_btn.setStyleSheet("background-color: #45475a; color: #cdd6f4; border-radius: 5px;")
         self.edit_btn.clicked.connect(self.enter_edit_mode)
-        self.edit_btn.setMouseTracking(True)
-        # self.edit_btn.hide() 
         self.display_layout.addWidget(self.edit_btn)
 
         self.stack.addWidget(self.display_widget)
 
-        
         # Edit Mode
         self.edit_widget = QWidget()
         self.edit_layout = QHBoxLayout(self.edit_widget)
@@ -67,7 +78,6 @@ class WorkspaceItem(QWidget):
         
         self.layout.addWidget(self.stack)
 
-
     def enter_edit_mode(self):
         self.line_edit.setText(self.display_name)
         self.stack.setCurrentIndex(1)
@@ -87,10 +97,7 @@ class WorkspaceItem(QWidget):
         self.stack.setCurrentIndex(0)
         self.editing_finished.emit()
 
-    def show_edit_btn(self):
-        self.edit_btn.setVisible(True)
-        self.update()
-
-    def hide_edit_btn(self):
-        self.edit_btn.setVisible(False)
-        self.update()
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit(self.ws_id)
+        super().mousePressEvent(event)
