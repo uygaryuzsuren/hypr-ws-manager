@@ -46,11 +46,13 @@ class MainWindow(QMainWindow):
         if event.key() == Qt.Key_Escape:
             self.close()
         elif event.key() in (Qt.Key_Enter, Qt.Key_Return):
-            current_item = self.list_widget.currentItem()
-            if current_item:
-                ws_id = current_item.data(Qt.UserRole)
-                if ws_id:
-                    self.navigate_to_workspace(ws_id)
+            # Only navigate if not editing and an item is selected
+            if not self.is_editing:
+                current_item = self.list_widget.currentItem()
+                if current_item:
+                    ws_id = current_item.data(Qt.UserRole)
+                    if ws_id:
+                        self.navigate_to_workspace(ws_id)
         super().keyPressEvent(event)
 
     def filter_workspaces(self):
