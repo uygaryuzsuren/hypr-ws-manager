@@ -12,12 +12,12 @@ class MainWindow(QMainWindow):
         self.is_editing = False
         self.is_exploding = False
         self.setWindowTitle("Hyprland Workspace Manager")
-        #self.resize(400, 600)
-        
+        self.setFixedSize(450, 600)
+
         # Set window flags for always on top and transparency
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
-        
+
         self.setup_ui()
         self.apply_settings()
         self.refresh_workspaces()
@@ -46,12 +46,27 @@ class MainWindow(QMainWindow):
         # Use a tiny delay to ensure Hyprland has registered the window
         QTimer.singleShot(50, self.hypr.make_floating_and_center)
 
-        self.resize(600, 600)
-
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             self.close()
         super().keyPressEvent(event)
+
+    def on_item_hover(self, index):
+        self.hide_all_edit_buttons()
+        item = self.list_widget.itemFromIndex(index)
+        widget = self.list_widget.itemWidget(item)
+        if widget and hasattr(widget, 'show_edit_btn'):
+            widget.show_edit_btn()
+
+    def hide_all_edit_buttons(self):
+        for i in range(self.list_widget.count()):
+            item = self.list_widget.item(i)
+            widget = self.list_widget.itemWidget(item)
+            if widget and hasattr(widget, 'hide_edit_btn'):
+                widget.hide_edit_btn()
+
+    def filter_workspaces(self):
+        self.refresh_workspaces()
 
     def setup_ui(self):
         central_widget = QWidget()
@@ -75,17 +90,152 @@ class MainWindow(QMainWindow):
         # Workspace list
         self.list_widget = QListWidget()
         self.list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.list_widget.setMouseTracking(True)
+        self.list_widget.viewport().setMouseTracking(True)
+        self.list_widget.entered.connect(self.on_item_hover)
         self.main_layout.addWidget(self.list_widget)
 
-        self.explode_btn = QPushButton("Explode Current Workspace")
+        explode_layout = QHBoxLayout()
+        self.explode_btn = QPushButton("Explode")
         self.explode_btn.clicked.connect(self.on_explode_all)
-        self.main_layout.addWidget(self.explode_btn)
+        explode_layout.addWidget(self.explode_btn)
+
+
+        self.explode_app_btn = QPushButton("Explode by App")
+        self.explode_app_btn.clicked.connect(self.on_explode_by_app)
+        explode_layout.addWidget(self.explode_app_btn)
+
+        self.explode_token_btn = QPushButton("Explode by Token")
+        self.explode_token_btn.clicked.connect(self.on_explode_by_token)
+        explode_layout.addWidget(self.explode_token_btn)
+        
+        self.token_input = QLineEdit()
+        self.token_input.setPlaceholderText("Token...")
+        self.token_input.setFixedWidth(80)
+        self.token_input.hide()
+        explode_layout.addWidget(self.token_input)
+
+        # Timer to delay hiding the input
+        self.hide_timer = QTimer(self)
+        self.hide_timer.setSingleShot(True)
+        self.hide_timer.timeout.connect(lambda: self.token_input.hide() if not self.token_input.hasFocus() else None)
+
+        # Hover logic
+        self.explode_token_btn.enterEvent = self.show_token_input
+        self.explode_token_btn.leaveEvent = self.start_hide_timer
+        self.token_input.enterEvent = lambda event: self.hide_timer.stop()
+        self.token_input.leaveEvent = self.start_hide_timer
+        self.token_input.focusOutEvent = lambda event: self.token_input.hide()
+        
+        self.main_layout.addLayout(explode_layout)
 
         self.error_label = QLabel("No workspaces found. Is Hyprland running?")
         self.error_label.setAlignment(Qt.AlignCenter)
         self.error_label.setStyleSheet("color: #f38ba8; font-weight: bold;")
         self.error_label.hide()
         self.main_layout.addWidget(self.error_label)
+
+    def on_explode_by_app(self):
+        active_ws = self.hypr.get_active_workspace()
+        if not active_ws:
+            return
+        original_ws_id = active_ws['id']
+        
+        windows = self.hypr.get_active_workspace_windows()
+        if not windows:
+            return
+
+        self.is_exploding = True
+        
+        from collections import defaultdict
+        grouped_windows = defaultdict(list)
+        for win in windows:
+            grouped_windows[win['class']].append(win)
+
+        existing_ids = self.hypr.get_existing_workspace_ids()
+        candidate_id = 1
+        
+        for app_class, group in grouped_windows.items():
+            while candidate_id in existing_ids:
+                candidate_id += 1
+            new_ws_id = candidate_id
+            existing_ids.append(new_ws_id)
+            
+            first_win = group[0]
+            win_title = first_win['title'] or f"Window_{app_class}"
+            
+            import re
+            clean_title = re.sub(r'[^a-zA-Z0-9_-]', ' ', win_title)
+            clean_title = re.sub(r'\s+', ' ', clean_title).strip().replace(" ", "_")
+            clean_class = re.sub(r'[^a-zA-Z0-9_-]', '_', app_class)
+            
+            name = f"[{clean_class}]-{clean_title}"
+            
+            self.hypr.switch_to_workspace(new_ws_id)
+            for window in group:
+                self.hypr.move_window_to_workspace(window['address'], new_ws_id)
+            
+            QThread.msleep(100)
+            self.hypr.set_workspace_name(new_ws_id, name)
+            self.config.set_workspace_name(new_ws_id, name)
+            self.config.set_original_title(new_ws_id, win_title)
+            
+        self.hypr.switch_to_workspace(original_ws_id)
+        self.is_exploding = False
+        self.refresh_workspaces()
+
+    def show_token_input(self, event):
+        self.hide_timer.stop()
+        self.token_input.show()
+
+    def start_hide_timer(self, event):
+        self.hide_timer.start(500)
+
+    def on_explode_by_token(self):
+        token = self.token_input.text().strip()
+        if not token:
+            return
+
+        active_ws = self.hypr.get_active_workspace()
+        if not active_ws:
+            return
+        original_ws_id = active_ws['id']
+        
+        windows = self.hypr.get_active_workspace_windows()
+        group = [win for win in windows if token.lower() in win['title'].lower()]
+        
+        if not group:
+            return
+
+        self.is_exploding = True
+        
+        existing_ids = self.hypr.get_existing_workspace_ids()
+        candidate_id = 1
+        while candidate_id in existing_ids:
+            candidate_id += 1
+        new_ws_id = candidate_id
+        
+        first_win = group[0]
+        win_title = first_win['title']
+        
+        import re
+        clean_title = re.sub(r'[^a-zA-Z0-9_-]', ' ', win_title)
+        clean_title = re.sub(r'\s+', ' ', clean_title).strip().replace(" ", "_")
+        
+        name = f"[Token-{token}]-{clean_title}"
+        
+        self.hypr.switch_to_workspace(new_ws_id)
+        for window in group:
+            self.hypr.move_window_to_workspace(window['address'], new_ws_id)
+            
+        QThread.msleep(100)
+        self.hypr.set_workspace_name(new_ws_id, name)
+        self.config.set_workspace_name(new_ws_id, name)
+        self.config.set_original_title(new_ws_id, win_title)
+            
+        self.hypr.switch_to_workspace(original_ws_id)
+        self.is_exploding = False
+        self.refresh_workspaces()
 
     def on_explode_all(self):
         active_ws = self.hypr.get_active_workspace()
@@ -119,7 +269,7 @@ class MainWindow(QMainWindow):
             if not win_title:
                 win_title = f"Window_{win_class}"
             
-            # Sanitise title for workspace name
+            # Sanitise title
             import re
             clean_title = re.sub(r'[^a-zA-Z0-9_-]', ' ', win_title)
             clean_title = re.sub(r'\s+', ' ', clean_title).strip().replace(" ", "_")
@@ -127,7 +277,8 @@ class MainWindow(QMainWindow):
             # Sanitise class
             clean_class = re.sub(r'[^a-zA-Z0-9_-]', '_', win_class)
             
-            name = f"{new_ws_id}-[{clean_class}]-{clean_title}"
+            # Format: [APP_CLASS]-Original_Title (ID is managed by Hyprland, not needed in name)
+            name = f"[{clean_class}]-{clean_title}"
             
             # Create/switch to workspace so it exists, then move and rename
             self.hypr.switch_to_workspace(new_ws_id)
@@ -203,24 +354,24 @@ class MainWindow(QMainWindow):
         self.list_widget.clear()
         for ws in workspaces:
             ws_id = ws['id']
-            # We want to display: ID-[APP_CLASS]-Original_Title
-            # We fetch original title and app class from config
-            original_title = self.config.get_original_title(ws_id)
-            
-            # Extract app class from the sanitized name if available for display
-            # Or store app class in a new config field? Let's try to extract from the sanitized name first.
+            # We want to display: ID-Name
+            # Get the sanitized name (which now holds [Class]-Title)
             sanitized_name = self.config.get_workspace_name(ws_id)
             
-            display_name = str(ws_id)
+            # Use original title for better readability if available
+            original_title = self.config.get_original_title(ws_id)
+            
             if sanitized_name:
                 import re
                 match = re.search(r'\[(.*?)\]', sanitized_name)
-                app_class = match.group(1) if match else ""
+                app_class = match.group(1) if match else "Unknown"
                 
                 if original_title:
                     display_name = f"{ws_id}-[{app_class}]-{original_title}"
                 else:
-                    display_name = sanitized_name
+                    display_name = f"{ws_id}-{sanitized_name}"
+            else:
+                display_name = str(ws_id)
             
             if search_text and search_text not in display_name.lower():
                 continue
@@ -235,6 +386,19 @@ class MainWindow(QMainWindow):
             item.setSizeHint(widget.sizeHint())
             self.list_widget.addItem(item)
             self.list_widget.setItemWidget(item, widget)
+    def on_item_hover(self, index):
+        self.hide_all_edit_buttons()
+        item = self.list_widget.itemFromIndex(index)
+        widget = self.list_widget.itemWidget(item)
+        if widget and hasattr(widget, 'show_edit_btn'):
+            widget.show_edit_btn()
+
+    def hide_all_edit_buttons(self):
+        for i in range(self.list_widget.count()):
+            item = self.list_widget.item(i)
+            widget = self.list_widget.itemWidget(item)
+            if widget and hasattr(widget, 'hide_edit_btn'):
+                widget.hide_edit_btn()
 
     def filter_workspaces(self):
         self.refresh_workspaces()
@@ -256,3 +420,4 @@ class MainWindow(QMainWindow):
     def on_editing_finished(self):
         self.is_editing = False
         self.timer.start(5000)
+
