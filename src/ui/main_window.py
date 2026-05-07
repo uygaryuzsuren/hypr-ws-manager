@@ -43,6 +43,10 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(50, self.hypr.make_floating_and_center)
 
     def keyPressEvent(self, event):
+        if self.is_editing:
+            super().keyPressEvent(event)
+            return
+
         if event.key() == Qt.Key_Escape:
             self.close()
         elif event.key() in (Qt.Key_Enter, Qt.Key_Return):
@@ -428,5 +432,10 @@ class MainWindow(QMainWindow):
         self.timer.stop()
 
     def on_editing_finished(self):
+        # Use a small delay to prevent the Enter key that finished the edit
+        # from bubbling up and triggering navigation in the same turn.
+        QTimer.singleShot(200, self._finish_editing_state)
+
+    def _finish_editing_state(self):
         self.is_editing = False
         self.timer.start(5000)
