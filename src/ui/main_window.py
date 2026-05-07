@@ -116,13 +116,20 @@ class MainWindow(QMainWindow):
         self.close()
 
     def on_explode_by_app(self):
+        # Capture the initially active workspace to return to it later
         active_ws = self.hypr.get_active_workspace()
-        if not active_ws:
-            return
-        original_ws_id = active_ws['id']
+        if not active_ws: return
+        initial_active_id = active_ws['id']
+
+        # Get source workspace from selection, fallback to active
+        current_item = self.list_widget.currentItem()
+        if current_item:
+            source_ws_id = current_item.data(Qt.UserRole)
+        else:
+            source_ws_id = initial_active_id
         
         all_windows = self.hypr.get_all_windows()
-        windows = [w for w in all_windows if int(w['workspace']['id']) == original_ws_id]
+        windows = [w for w in all_windows if int(w['workspace']['id']) == int(source_ws_id)]
         if not windows:
             return
 
@@ -161,7 +168,7 @@ class MainWindow(QMainWindow):
             self.config.set_workspace_name(new_ws_id, name)
             self.config.set_original_title(new_ws_id, win_title)
             
-        self.hypr.switch_to_workspace(original_ws_id)
+        self.hypr.switch_to_workspace(initial_active_id)
         self.is_exploding = False
         self.refresh_workspaces()
 
@@ -170,13 +177,20 @@ class MainWindow(QMainWindow):
         if not token:
             return
 
+        # Capture the initially active workspace to return to it later
         active_ws = self.hypr.get_active_workspace()
-        if not active_ws:
-            return
-        original_ws_id = active_ws['id']
+        if not active_ws: return
+        initial_active_id = active_ws['id']
+
+        # Get source workspace from selection, fallback to active
+        current_item = self.list_widget.currentItem()
+        if current_item:
+            source_ws_id = current_item.data(Qt.UserRole)
+        else:
+            source_ws_id = initial_active_id
         
         all_windows = self.hypr.get_all_windows()
-        windows = [w for w in all_windows if int(w['workspace']['id']) == original_ws_id]
+        windows = [w for w in all_windows if int(w['workspace']['id']) == int(source_ws_id)]
         group = [win for win in windows if token.lower() in win['title'].lower()]
         
         if not group:
@@ -208,20 +222,27 @@ class MainWindow(QMainWindow):
         self.config.set_workspace_name(new_ws_id, name)
         self.config.set_original_title(new_ws_id, win_title)
             
-        self.hypr.switch_to_workspace(original_ws_id)
+        self.hypr.switch_to_workspace(initial_active_id)
         self.is_exploding = False
         self.refresh_workspaces()
 
     def on_explode_all(self):
+        # Capture the initially active workspace to return to it later
         active_ws = self.hypr.get_active_workspace()
-        if not active_ws:
-            return
-        original_ws_id = active_ws['id']
+        if not active_ws: return
+        initial_active_id = active_ws['id']
+
+        # Get source workspace from selection, fallback to active
+        current_item = self.list_widget.currentItem()
+        if current_item:
+            source_ws_id = current_item.data(Qt.UserRole)
+        else:
+            source_ws_id = initial_active_id
         
         self.is_exploding = True
 
         all_windows = self.hypr.get_all_windows()
-        windows = [w for w in all_windows if int(w['workspace']['id']) == original_ws_id]
+        windows = [w for w in all_windows if int(w['workspace']['id']) == int(source_ws_id)]
         if not windows:
             self.is_exploding = False
             return
@@ -257,10 +278,10 @@ class MainWindow(QMainWindow):
             self.config.set_workspace_name(new_ws_id, name)
             self.config.set_original_title(new_ws_id, win_title)
             
-        self.hypr.switch_to_workspace(original_ws_id)
+        self.hypr.switch_to_workspace(initial_active_id)
         self.is_exploding = False
         self.refresh_workspaces()
-
+            
     def apply_settings(self):
         alpha = int(self.config.transparency * 255)
         
