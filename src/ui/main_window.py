@@ -25,6 +25,8 @@ class MainWindow(QMainWindow):
         active_ws = self.hypr.get_active_workspace()
         self.last_workspace_id = active_ws['id'] if active_ws else None
         
+        self.search_bar.setFocus()
+        
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.check_workspace_change)
         self.timer.start(2000)
@@ -491,7 +493,17 @@ class MainWindow(QMainWindow):
                 else:
                     display_name = f"{ws_id}-[{display_app_class}]"
             
-            if search_text and search_text not in display_name.lower():
+            # Check if search matches display name OR any window title in this workspace
+            match_found = False
+            if not search_text or search_text in display_name.lower():
+                match_found = True
+            else:
+                for w in wins:
+                    if search_text in w['title'].lower():
+                        match_found = True
+                        break
+            
+            if not match_found:
                 continue
                 
             item = QListWidgetItem("")
