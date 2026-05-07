@@ -318,47 +318,59 @@ class MainWindow(QMainWindow):
         reselected_item = None
         for ws in workspaces:
             ws_id = ws['id']
-            # Find the first window's class in this workspace
+            # Find all window classes in this workspace
             all_wins = self.hypr.get_all_windows()
             wins = [w for w in all_wins if int(w['workspace']['id']) == int(ws_id)]
-            app_class = wins[0]['class'].lower() if wins else None
+            app_classes = list(set([w['class'].lower() for w in wins])) if wins else []
             
-            # Get sanitized name (for Hyprland) and original title (for UI)
             sanitized_name = self.config.get_workspace_name(ws_id)
             original_title = self.config.get_original_title(ws_id)
             
             # Formatting display: ID-[APP_CLASS]-Original_Title
             if sanitized_name:
                 import re
-                match = re.search(r'\[(.*?)\]', sanitized_name)
+                # Clean up: remove existing ID prefix like "7-" from sanitized_name
+                clean_name = re.sub(r'^\d+-', '', sanitized_name)
+                match = re.search(r'\[(.*?)\]', clean_name)
+
                 # Ensure app_class comes from the window if possible, else the name tag
-                display_app_class = app_class or (match.group(1).lower() if match else "application-x-executable")
+                display_app_class = app_classes[0] if app_classes else (match.group(1).lower() if match else "application-x-executable")
+
+                title_to_show = original_title if original_title else re.sub(r'\[.*?\]-', '', clean_name)
                 
-                title_to_show = original_title if original_title else sanitized_name
-                # Strip ID-[class]- if it's there
-                title_to_show = re.sub(r'^\d+-\[.*?\]-', '', title_to_show)
-                if len(title_to_show) > 80:
-                    title_to_show = title_to_show[:80] + "..."
-                display_name = f"{ws_id}-[{display_app_class}]-{title_to_show}"
+                # Avoid redundant ID at the end
+                if str(title_to_show) == str(ws_id):
+                    title_to_show = ""
+
+                if len(str(title_to_show)) > 80:
+                    title_to_show = str(title_to_show)[:80] + "..."
+                
+                if title_to_show:
+                    display_name = f"{ws_id}-[{display_app_class}]-{title_to_show}"
+                else:
+                    display_name = f"{ws_id}-[{display_app_class}]"
+
             else:
-                display_app_class = app_class or "application-x-executable"
-                display_name = f"{ws_id}-[{display_app_class}]-{original_title if original_title else str(ws_id)}"
+                display_app_class = app_classes[0] if app_classes else "application-x-executable"
+                if original_title and str(original_title) != str(ws_id):
+                    display_name = f"{ws_id}-[{display_app_class}]-{original_title}"
+                else:
+                    display_name = f"{ws_id}-[{display_app_class}]"
             
             if search_text and search_text not in display_name.lower():
                 continue
                 
             item = QListWidgetItem("")
             item.setData(Qt.UserRole, ws_id)
-            widget = WorkspaceItem(ws_id, display_name, app_class=app_class)
+            widget = WorkspaceItem(ws_id, display_name, app_classes=app_classes)
             widget.clicked.connect(self.navigate_to_workspace)
             widget.renamed.connect(self.rename_workspace)
             widget.editing_started.connect(self.on_editing_started)
             widget.editing_finished.connect(self.on_editing_finished)
-
+            
             item.setSizeHint(widget.sizeHint())
             self.list_widget.addItem(item)
             self.list_widget.setItemWidget(item, widget)
-
             
             if ws_id == selected_ws_id:
                 reselected_item = item
@@ -367,8 +379,15 @@ class MainWindow(QMainWindow):
             self.list_widget.setCurrentItem(reselected_item)
 
     def rename_workspace(self, ws_id, new_name):
-        self.config.set_workspace_name(ws_id, new_name)
-        self.config.set_original_title(ws_id, new_name)
+        import re
+        # Strip ID- prefix and [class]- prefix if they exist to avoid recursive prefixing
+        clean_name = re.sub(r'^\d+-(\[.*?\]-)?', '', new_name)
+        # Also handle case where it's just the ID
+        if clean_name == str(ws_id):
+            clean_name = ""
+            
+        self.config.set_workspace_name(ws_id, clean_name)
+        self.config.set_original_title(ws_id, clean_name)
         self.filter_workspaces()
 
     def on_editing_started(self):

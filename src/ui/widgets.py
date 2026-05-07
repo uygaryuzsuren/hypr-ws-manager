@@ -9,11 +9,11 @@ class WorkspaceItem(QWidget):
     editing_started = Signal()
     editing_finished = Signal()
 
-    def __init__(self, ws_id, display_name, app_class=None, parent=None):
+    def __init__(self, ws_id, display_name, app_classes=None, parent=None):
         super().__init__(parent)
         self.ws_id = ws_id
         self.display_name = display_name
-        self.app_class = app_class
+        self.app_classes = app_classes if app_classes else []
         self.setMouseTracking(True)
         self.setup_ui()
 
@@ -22,39 +22,38 @@ class WorkspaceItem(QWidget):
         self.layout.setContentsMargins(5, 5, 5, 5)
 
         self.stack = QStackedWidget()
-
+        
         # Display Mode
         self.display_widget = QWidget()
         self.display_widget.setStyleSheet("background-color: transparent;")
         self.display_layout = QHBoxLayout(self.display_widget)
         self.display_layout.setContentsMargins(0, 0, 0, 0)
-
-        # Icon
-        self.icon_label = QLabel()
-        icon = QIcon.fromTheme(self.app_class if self.app_class else "")
         
-        if icon.isNull():
-            # Create a blank, transparent placeholder
-            placeholder = QPixmap(20, 20)
-            placeholder.fill(Qt.transparent)
-            self.icon_label.setPixmap(placeholder)
-        else:
-            self.icon_label.setPixmap(icon.pixmap(20, 20))
-        self.display_layout.addWidget(self.icon_label)
+        # Icons
+        if not self.app_classes:
+            self.app_classes = ["application-x-executable"]
+
+        for app_class in self.app_classes[:5]: # Show max 5 icons
+            icon_label = QLabel()
+            icon_label.setAttribute(Qt.WA_TransparentForMouseEvents)
+            icon = QIcon.fromTheme(app_class, QIcon.fromTheme("application-x-executable"))
+            icon_label.setPixmap(icon.pixmap(20, 20))
+            self.display_layout.addWidget(icon_label)
 
         self.label = QLabel(self.display_name)
+        self.label.setAttribute(Qt.WA_TransparentForMouseEvents)
         self.label.setStyleSheet("font-size: 12px; color: #cdd6f4;")
         self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.display_layout.addWidget(self.label)
-
+        
         self.edit_btn = QPushButton("✎")
         self.edit_btn.setFixedSize(30, 30)
         self.edit_btn.setStyleSheet("background-color: #45475a; color: #cdd6f4; border-radius: 5px;")
         self.edit_btn.clicked.connect(self.enter_edit_mode)
         self.display_layout.addWidget(self.edit_btn)
-
+        
         self.stack.addWidget(self.display_widget)
-
+        
         # Edit Mode
         self.edit_widget = QWidget()
         self.edit_layout = QHBoxLayout(self.edit_widget)
@@ -98,6 +97,7 @@ class WorkspaceItem(QWidget):
         self.editing_finished.emit()
 
     def mousePressEvent(self, event):
+        print(f"DEBUG: WorkspaceItem {self.ws_id} mousePressEvent")
         if event.button() == Qt.LeftButton:
             self.clicked.emit(self.ws_id)
         super().mousePressEvent(event)

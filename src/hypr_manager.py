@@ -50,15 +50,11 @@ class HyprManager:
         self._run_command(["dispatch", "centerwindow", selector])
         self._run_command(["dispatch", "pin", selector])
 
-    def get_active_workspace_windows(self):
+    def get_all_windows(self):
         output = self._run_command(["clients", "-j"])
         if output:
             try:
-                clients = json.loads(output)
-                active_ws = self.get_active_workspace()
-                if active_ws:
-                    active_id = active_ws['id']
-                    return [c for c in clients if c['workspace']['id'] == active_id]
+                return json.loads(output)
             except json.JSONDecodeError:
                 logging.error("Failed to parse hyprctl clients output")
         return []
