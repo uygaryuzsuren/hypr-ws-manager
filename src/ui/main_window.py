@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-                             QLineEdit, QListWidget, QListWidgetItem, QPushButton, QLabel)
+                             QLineEdit, QListWidget, QListWidgetItem, QPushButton, QLabel, QComboBox)
 from PySide6.QtCore import Qt, QTimer, QThread, QEvent, QSize
 from src.ui.widgets import WorkspaceItem
 from src.ui.settings_window import SettingsWindow
@@ -101,6 +101,25 @@ class MainWindow(QMainWindow):
         explode_layout.addWidget(self.token_input)
         
         self.main_layout.addLayout(explode_layout)
+
+        collect_layout = QHBoxLayout()
+        self.collect_btn = QPushButton("Collect")
+        self.collect_btn.clicked.connect(self.on_collect_all)
+        collect_layout.addWidget(self.collect_btn)
+
+        self.collect_app_btn = QPushButton("Collect by App")
+        self.collect_app_btn.clicked.connect(self.on_collect_by_app)
+        collect_layout.addWidget(self.collect_app_btn)
+
+        self.collect_token_btn = QPushButton("Collect by Token")
+        self.collect_token_btn.clicked.connect(self.on_collect_by_token)
+        collect_layout.addWidget(self.collect_token_btn)
+
+        self.app_selector = QComboBox()
+        self.app_selector.setMinimumWidth(150)
+        collect_layout.addWidget(self.app_selector)
+        
+        self.main_layout.addLayout(collect_layout)
 
         self.error_label = QLabel("No workspaces found. Is Hyprland running?")
         self.error_label.setAlignment(Qt.AlignCenter)
@@ -285,7 +304,81 @@ class MainWindow(QMainWindow):
         self.hypr.switch_to_workspace(initial_active_id)
         self.is_exploding = False
         self.refresh_workspaces()
-            
+
+    def on_collect_all(self):
+        # Get target workspace from selection, fallback to active
+        current_item = self.list_widget.currentItem()
+        if current_item:
+            target_ws_id = current_item.data(Qt.UserRole)
+        else:
+            active_ws = self.hypr.get_active_workspace()
+            if not active_ws: return
+            target_ws_id = active_ws['id']
+
+        self.is_exploding = True # Reuse flag to prevent timer refresh during move
+        
+        all_windows = self.hypr.get_all_windows()
+        for window in all_windows:
+            # Don't move if it's already in the target workspace
+            if int(window['workspace']['id']) != int(target_ws_id):
+                self.hypr.move_window_to_workspace(window['address'], target_ws_id)
+        
+        # Switch focus to the target workspace
+        self.hypr.switch_to_workspace(target_ws_id)
+        
+        self.is_exploding = False
+        self.refresh_workspaces()
+
+    def on_collect_by_app(self):
+        selected_app = self.app_selector.currentText()
+        if not selected_app:
+            return
+
+        # Get target workspace from selection, fallback to active
+        current_item = self.list_widget.currentItem()
+        if current_item:
+            target_ws_id = current_item.data(Qt.UserRole)
+        else:
+            active_ws = self.hypr.get_active_workspace()
+            if not active_ws: return
+            target_ws_id = active_ws['id']
+
+        self.is_exploding = True
+        
+        all_windows = self.hypr.get_all_windows()
+        for window in all_windows:
+            if window['class'] == selected_app and int(window['workspace']['id']) != int(target_ws_id):
+                self.hypr.move_window_to_workspace(window['address'], target_ws_id)
+        
+        self.hypr.switch_to_workspace(target_ws_id)
+        self.is_exploding = False
+        self.refresh_workspaces()
+
+    def on_collect_by_token(self):
+        token = self.token_input.text().strip()
+        if not token:
+            return
+
+        # Get target workspace from selection, fallback to active
+        current_item = self.list_widget.currentItem()
+        if current_item:
+            target_ws_id = current_item.data(Qt.UserRole)
+        else:
+            active_ws = self.hypr.get_active_workspace()
+            if not active_ws: return
+            target_ws_id = active_ws['id']
+
+        self.is_exploding = True
+        
+        all_windows = self.hypr.get_all_windows()
+        for window in all_windows:
+            if token.lower() in window['title'].lower() and int(window['workspace']['id']) != int(target_ws_id):
+                self.hypr.move_window_to_workspace(window['address'], target_ws_id)
+        
+        self.hypr.switch_to_workspace(target_ws_id)
+        self.is_exploding = False
+        self.refresh_workspaces()
+
     def apply_settings(self):
         alpha = int(self.config.transparency * 255)
         
@@ -329,6 +422,15 @@ class MainWindow(QMainWindow):
         workspaces = self.hypr.get_workspaces()
         self.cleanup_empty_workspaces(workspaces)
         
+        all_wins = self.hypr.get_all_windows()
+        # Update app selector with unique classes
+        current_selection = self.app_selector.currentText()
+        all_classes = sorted(list(set(w['class'] for w in all_wins if w['class'])))
+        self.app_selector.clear()
+        self.app_selector.addItems(all_classes)
+        if current_selection in all_classes:
+            self.app_selector.setCurrentText(current_selection)
+
         active_ws = self.hypr.get_active_workspace()
         active_id = active_ws['id'] if active_ws else None
         
@@ -413,7 +515,9 @@ class MainWindow(QMainWindow):
         if target_item:
             self.list_widget.setCurrentItem(target_item)
             self.list_widget.scrollToItem(target_item)
-            self.list_widget.setFocus()
+            # Only steal focus back to list if no input is currently focused
+            if not self.search_bar.hasFocus() and not self.token_input.hasFocus():
+                self.list_widget.setFocus()
 
     def rename_workspace(self, ws_id, new_name):
         import re
