@@ -576,13 +576,14 @@ class MainWindow(QMainWindow):
                 if len(str(title_to_show)) > 80:
                     title_to_show = str(title_to_show)[:80] + "..."
                 
+                # Construct name cleanly
+                parts = [str(ws_id)]
                 if tags_str:
-                    if title_to_show and title_to_show not in all_tags:
-                        display_name = f"{ws_id}-{tags_str}-{title_to_show}"
-                    else:
-                        display_name = f"{ws_id}-{tags_str}"
-                else:
-                    display_name = f"{ws_id}-{title_to_show}" if title_to_show else str(ws_id)
+                    parts.append(tags_str)
+                if title_to_show and title_to_show not in all_tags:
+                    parts.append(title_to_show)
+                
+                display_name = "-".join(parts)
 
             else:
                 display_app_class = app_classes[0] if app_classes else ""
