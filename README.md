@@ -25,6 +25,13 @@ A lightweight Python GUI for managing, naming, and navigating Hyprland workspace
 - **Keyboard Optimized:** Full navigation via Arrow Keys/Tab and Enter; Escape to close.
 - **Auto-Reset:** Automatically clears names and configuration for empty workspaces.
 
+## Screenshots
+### Main Interface
+![Main UI](assets/screenshots/main_ui.png)
+
+### Selective Explode & Dynamic Inputs
+![Selective Explode](assets/screenshots/selective_explode.png)
+
 ## Installation & Setup
 
 ### Quick Start
