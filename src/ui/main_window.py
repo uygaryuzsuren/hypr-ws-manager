@@ -538,6 +538,11 @@ class MainWindow(QMainWindow):
             ws_id = ws['id']
             # Find all relevant windows in this workspace
             wins = [w for w in all_wins if int(w['workspace']['id']) == int(ws_id)]
+            
+            # Skip empty workspaces unless it is the active one
+            if not wins and ws_id != active_id:
+                continue
+
             # Get application classes for icons
             app_classes = [w['class'].lower() for w in wins] if wins else []
             

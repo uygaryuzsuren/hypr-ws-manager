@@ -37,9 +37,6 @@ class WorkspaceItem(QWidget):
         self.display_layout.setContentsMargins(0, 0, 0, 0)
         
         # Icons
-        if not self.app_classes:
-            self.app_classes = ["application-x-executable"]
-
         for app_class in self.app_classes[:5]: # Show max 5 icons
             icon_label = QLabel()
             icon_label.setAttribute(Qt.WA_TransparentForMouseEvents)
