@@ -62,6 +62,9 @@ class WorkspaceItem(QWidget):
         self.label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         self.display_layout.addWidget(self.label)
         
+        # Add stretch here to push the edit button to the right
+        self.display_layout.addStretch()
+        
         self.edit_btn = QPushButton("✎")
         self.edit_btn.setFixedSize(30, 30)
         # Button style should follow global theme but we can ensure it here if needed
@@ -69,8 +72,6 @@ class WorkspaceItem(QWidget):
         self.edit_btn.setStyleSheet(f"background-color: {btn_bg}; color: {text_color}; border-radius: 5px;")
         self.edit_btn.clicked.connect(self.enter_edit_mode)
         self.display_layout.addWidget(self.edit_btn)
-        
-        self.display_layout.addStretch()
         
         self.stack.addWidget(self.display_widget)
         
@@ -83,6 +84,8 @@ class WorkspaceItem(QWidget):
         self.line_edit.returnPressed.connect(self.save_name)
         self.edit_layout.addWidget(self.line_edit)
         
+        self.edit_layout.addStretch()
+        
         self.save_btn = QPushButton("✓")
         self.save_btn.setFixedSize(30, 30)
         self.save_btn.clicked.connect(self.save_name)
@@ -92,8 +95,6 @@ class WorkspaceItem(QWidget):
         self.cancel_btn.setFixedSize(30, 30)
         self.cancel_btn.clicked.connect(self.cancel_edit)
         self.edit_layout.addWidget(self.cancel_btn)
-        
-        self.edit_layout.addStretch()
         
         self.stack.addWidget(self.edit_widget)
         
