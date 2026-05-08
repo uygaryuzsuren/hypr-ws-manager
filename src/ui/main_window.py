@@ -577,13 +577,18 @@ class MainWindow(QMainWindow):
                     title_to_show = str(title_to_show)[:80] + "..."
                 
                 # Construct name cleanly
-                parts = [str(ws_id)]
-                if tags_str:
-                    parts.append(tags_str)
-                if title_to_show and title_to_show not in all_tags:
-                    parts.append(title_to_show)
+                # We start with ws_id, then add other components
+                display_name = str(ws_id)
                 
-                display_name = "-".join(parts)
+                if tags_str:
+                    display_name += "-" + tags_str
+                
+                if title_to_show and title_to_show not in all_tags:
+                    # If we already have a tag, ensure we add a dash before the title
+                    if display_name != str(ws_id):
+                        display_name += "-" + title_to_show
+                    else:
+                        display_name += "-" + title_to_show
 
             else:
                 display_app_class = app_classes[0] if app_classes else ""
