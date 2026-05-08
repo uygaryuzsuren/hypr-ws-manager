@@ -45,8 +45,8 @@ class WorkspaceItem(QWidget):
             if icon.isNull():
                 # Subtle placeholder for missing icons
                 pixmap = QPixmap(20, 20)
-                # Using a transparent placeholder color based on the theme
-                fill_color = QColor(200, 200, 200, 50) 
+                # Using black placeholder
+                fill_color = QColor(0, 0, 0, 100) 
                 pixmap.fill(fill_color)
                 icon_label.setPixmap(pixmap)
             else:
