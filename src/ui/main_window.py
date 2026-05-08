@@ -27,6 +27,7 @@ class MainWindow(QMainWindow):
         
         self.search_bar.setFocus()
         
+        # Workspace update timer
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.check_workspace_change)
         self.timer.start(2000)
@@ -90,14 +91,19 @@ class MainWindow(QMainWindow):
         self.explode_btn.clicked.connect(self.on_explode_all)
         explode_layout.addWidget(self.explode_btn)
 
-        self.app_selector_explode = QComboBox()
-        self.app_selector_explode.setMinimumWidth(150)
-        self.app_selector_explode.hide()
-        explode_layout.addWidget(self.app_selector_explode)
+        self.app_selector_explode_all = QComboBox()
+        self.app_selector_explode_all.setMinimumWidth(150)
+        self.app_selector_explode_all.hide()
+        explode_layout.addWidget(self.app_selector_explode_all)
 
         self.explode_app_btn = QPushButton("Explode by App")
         self.explode_app_btn.clicked.connect(self.on_explode_by_app)
         explode_layout.addWidget(self.explode_app_btn)
+
+        self.app_selector_explode_app = QComboBox()
+        self.app_selector_explode_app.setMinimumWidth(150)
+        self.app_selector_explode_app.hide()
+        explode_layout.addWidget(self.app_selector_explode_app)
 
         self.explode_token_btn = QPushButton("Explode by Token")
         self.explode_token_btn.clicked.connect(self.on_explode_by_token)
@@ -112,10 +118,6 @@ class MainWindow(QMainWindow):
         self.main_layout.addLayout(explode_layout)
 
         collect_layout = QHBoxLayout()
-        self.collect_btn = QPushButton("Collect")
-        self.collect_btn.clicked.connect(self.on_collect_all)
-        collect_layout.addWidget(self.collect_btn)
-
         self.collect_app_btn = QPushButton("Collect by App")
         self.collect_app_btn.clicked.connect(self.on_collect_by_app)
         collect_layout.addWidget(self.collect_app_btn)
@@ -135,22 +137,12 @@ class MainWindow(QMainWindow):
         self.token_input_collect.hide()
         collect_layout.addWidget(self.token_input_collect)
         
+        # Bottom row
         self.main_layout.addLayout(collect_layout)
 
         # Sync inputs
         self.token_input_explode.textChanged.connect(self.token_input_collect.setText)
         self.token_input_collect.textChanged.connect(self.token_input_explode.setText)
-
-        # Install event filters for hover
-        self.explode_btn.installEventFilter(self)
-        self.explode_app_btn.installEventFilter(self)
-        self.app_selector_explode.installEventFilter(self)
-        self.explode_token_btn.installEventFilter(self)
-        self.token_input_explode.installEventFilter(self)
-        self.collect_app_btn.installEventFilter(self)
-        self.app_selector.installEventFilter(self)
-        self.collect_token_btn.installEventFilter(self)
-        self.token_input_collect.installEventFilter(self)
 
         self.error_label = QLabel("No workspaces found. Is Hyprland running?")
         self.error_label.setAlignment(Qt.AlignCenter)
@@ -170,6 +162,12 @@ class MainWindow(QMainWindow):
         self.close()
 
     def on_explode_by_app(self):
+        # Reveal input on first click
+        if self.app_selector_explode_app.isHidden():
+            self.app_selector_explode_app.show()
+            self.app_selector_explode_app.setFocus()
+            return
+
         # Capture the initially active workspace to return to it later
         active_ws = self.hypr.get_active_workspace()
         if not active_ws: return
@@ -192,7 +190,7 @@ class MainWindow(QMainWindow):
         from collections import defaultdict
         grouped_windows = defaultdict(list)
         
-        selected_type = self.app_selector_explode.currentText()
+        selected_type = self.app_selector_explode_app.currentText()
         
         for win in windows:
             if selected_type == "All" or win['class'] == selected_type:
@@ -235,6 +233,12 @@ class MainWindow(QMainWindow):
         self.refresh_workspaces()
 
     def on_explode_by_token(self):
+        # Reveal input on first click
+        if self.token_input_explode.isHidden():
+            self.token_input_explode.show()
+            self.token_input_explode.setFocus()
+            return
+
         token = self.token_input_explode.text().strip()
         if not token:
             return
@@ -289,6 +293,12 @@ class MainWindow(QMainWindow):
         self.refresh_workspaces()
 
     def on_explode_all(self):
+        # Reveal input on first click
+        if self.app_selector_explode_all.isHidden():
+            self.app_selector_explode_all.show()
+            self.app_selector_explode_all.setFocus()
+            return
+
         # Capture the initially active workspace to return to it later
         active_ws = self.hypr.get_active_workspace()
         if not active_ws: return
@@ -306,7 +316,7 @@ class MainWindow(QMainWindow):
         all_windows = self.hypr.get_all_windows()
         windows = [w for w in all_windows if int(w['workspace']['id']) == int(source_ws_id)]
         
-        selected_type = self.app_selector_explode.currentText()
+        selected_type = self.app_selector_explode_all.currentText()
         # Filter windows if a specific app is selected
         if selected_type != "All":
             windows = [w for w in windows if w['class'] == selected_type]
@@ -350,31 +360,13 @@ class MainWindow(QMainWindow):
         self.is_exploding = False
         self.refresh_workspaces()
 
-    def on_collect_all(self):
-        # Get target workspace from selection, fallback to active
-        current_item = self.list_widget.currentItem()
-        if current_item:
-            target_ws_id = current_item.data(Qt.UserRole)
-        else:
-            active_ws = self.hypr.get_active_workspace()
-            if not active_ws: return
-            target_ws_id = active_ws['id']
-
-        self.is_exploding = True # Reuse flag to prevent timer refresh during move
-        
-        all_windows = self.hypr.get_all_windows()
-        for window in all_windows:
-            # Don't move if it's already in the target workspace
-            if int(window['workspace']['id']) != int(target_ws_id):
-                self.hypr.move_window_to_workspace(window['address'], target_ws_id)
-        
-        # Switch focus to the target workspace
-        self.hypr.switch_to_workspace(target_ws_id)
-        
-        self.is_exploding = False
-        self.refresh_workspaces()
-
     def on_collect_by_app(self):
+        # Reveal input on first click
+        if self.app_selector.isHidden():
+            self.app_selector.show()
+            self.app_selector.setFocus()
+            return
+
         selected_app = self.app_selector.currentText()
         if not selected_app:
             return
@@ -392,7 +384,8 @@ class MainWindow(QMainWindow):
         
         all_windows = self.hypr.get_all_windows()
         for window in all_windows:
-            if window['class'] == selected_app and int(window['workspace']['id']) != int(target_ws_id):
+            # Move if app matches OR if "All" is selected
+            if (selected_app == "All" or window['class'] == selected_app) and int(window['workspace']['id']) != int(target_ws_id):
                 self.hypr.move_window_to_workspace(window['address'], target_ws_id)
         
         self.hypr.switch_to_workspace(target_ws_id)
@@ -400,6 +393,12 @@ class MainWindow(QMainWindow):
         self.refresh_workspaces()
 
     def on_collect_by_token(self):
+        # Reveal input on first click
+        if self.token_input_collect.isHidden():
+            self.token_input_collect.show()
+            self.token_input_collect.setFocus()
+            return
+
         token = self.token_input_collect.text().strip()
         if not token:
             return
@@ -474,11 +473,14 @@ class MainWindow(QMainWindow):
         all_wins = self.hypr.get_all_windows()
         # Update app selector with unique classes (excluding self)
         current_selection = self.app_selector.currentText()
-        all_classes = sorted(list(set(w['class'] for w in all_wins if w['class'] and w['class'] != "hypr-ws-manager")))
+        all_classes = ["All"]
+        all_classes.extend(sorted(list(set(w['class'] for w in all_wins if w['class'] and w['class'] != "hypr-ws-manager"))))
         self.app_selector.clear()
         self.app_selector.addItems(all_classes)
         if current_selection in all_classes:
             self.app_selector.setCurrentText(current_selection)
+        else:
+            self.app_selector.setCurrentText("All")
 
         active_ws = self.hypr.get_active_workspace()
         active_id = active_ws['id'] if active_ws else None
@@ -490,13 +492,23 @@ class MainWindow(QMainWindow):
             target_wins = [w for w in all_wins if int(w['workspace']['id']) == int(target_ws_id)]
             explode_classes.extend(sorted(list(set(w['class'] for w in target_wins if w['class'] and w['class'] != "hypr-ws-manager"))))
         
-        current_explode_selection = self.app_selector_explode.currentText()
-        self.app_selector_explode.clear()
-        self.app_selector_explode.addItems(explode_classes)
-        if current_explode_selection in explode_classes:
-            self.app_selector_explode.setCurrentText(current_explode_selection)
+        # Populate Explode All dropdown
+        current_explode_all_selection = self.app_selector_explode_all.currentText()
+        self.app_selector_explode_all.clear()
+        self.app_selector_explode_all.addItems(explode_classes)
+        if current_explode_all_selection in explode_classes:
+            self.app_selector_explode_all.setCurrentText(current_explode_all_selection)
         else:
-            self.app_selector_explode.setCurrentText("All")
+            self.app_selector_explode_all.setCurrentText("All")
+
+        # Populate Explode By App dropdown
+        current_explode_app_selection = self.app_selector_explode_app.currentText()
+        self.app_selector_explode_app.clear()
+        self.app_selector_explode_app.addItems(explode_classes)
+        if current_explode_app_selection in explode_classes:
+            self.app_selector_explode_app.setCurrentText(current_explode_app_selection)
+        else:
+            self.app_selector_explode_app.setCurrentText("All")
 
         if not workspaces:
             self.list_widget.hide()
@@ -617,43 +629,3 @@ class MainWindow(QMainWindow):
     def _finish_editing_state(self):
         self.is_editing = False
         self.timer.start(5000)
-
-    def eventFilter(self, source, event):
-        # Handle hover-to-reveal for token inputs and app selectors
-        if event.type() == QEvent.Enter:
-            if source is self.explode_token_btn or source is self.token_input_explode:
-                self.token_input_explode.show()
-            elif source in (self.explode_btn, self.explode_app_btn, self.app_selector_explode):
-                self.app_selector_explode.show()
-            elif source is self.collect_app_btn or source is self.app_selector:
-                self.app_selector.show()
-            elif source is self.collect_token_btn or source is self.token_input_collect:
-                self.token_input_collect.show()
-                
-        elif event.type() == QEvent.Leave:
-            if source in (self.explode_token_btn, self.token_input_explode, 
-                         self.explode_btn, self.explode_app_btn, self.app_selector_explode,
-                         self.collect_app_btn, self.app_selector,
-                         self.collect_token_btn, self.token_input_collect):
-                QTimer.singleShot(100, self.update_dynamic_visibility)
-                
-        return super().eventFilter(source, event)
-
-    def update_dynamic_visibility(self):
-        # Explode row - Token
-        if not self.token_input_explode.hasFocus() and not self.explode_token_btn.underMouse() and not self.token_input_explode.underMouse():
-            self.token_input_explode.hide()
-            
-        # Explode row - App Selector
-        view_explode_visible = self.app_selector_explode.view().isVisible() if self.app_selector_explode.view() else False
-        if not self.app_selector_explode.hasFocus() and not self.explode_app_btn.underMouse() and not self.explode_btn.underMouse() and not self.app_selector_explode.underMouse() and not view_explode_visible:
-            self.app_selector_explode.hide()
-        
-        # Collect row - App Selector
-        view_collect_visible = self.app_selector.view().isVisible() if self.app_selector.view() else False
-        if not self.app_selector.hasFocus() and not self.collect_app_btn.underMouse() and not self.app_selector.underMouse() and not view_collect_visible:
-            self.app_selector.hide()
-
-        # Collect row - Token Input
-        if not self.token_input_collect.hasFocus() and not self.collect_token_btn.underMouse() and not self.token_input_collect.underMouse():
-            self.token_input_collect.hide()

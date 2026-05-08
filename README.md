@@ -51,33 +51,34 @@ After running the installer, **Hyprland Workspace Manager** will appear in your 
   - **Enter**: Switch to the selected workspace.
   - **Search**: Start typing immediately upon launch to filter workspaces by name, ID, or window titles.
   - **Escape**: Close the manager instantly.
-- **Mouse**:
-  - **Click**: Switch to a workspace instantly.
-  - **Edit (✎ icon)**: Click to rename a workspace. Press Enter to save.
+- **Collect Suite (Gather):**
+    - **By App:** Gather all windows of a specific type (or **All** windows) from across the system into the selected workspace.
+    - **By Token:** Gather windows matching a title keyword from any workspace.
 
----
+...
 
 ### The "Explode" Suite (Redistribute)
 The Explode tools help you clean up a cluttered workspace by moving its windows to new, dedicated workspaces. Select a source workspace from the list, then use:
 
-- **Dropdown Filter**: Hover over **Explode** or **Explode by App** to reveal a dropdown. It lists all application types found in the selected workspace (e.g., `firefox`, `kitty`).
+- **Interaction (Click-to-Reveal)**: Action buttons follow a consistent pattern: Click once to reveal the filter dropdown or input box, and click again to execute.
 - **Explode**: 
   - With **"All"** selected: Moves **every window** from the source workspace into its own separate, new workspace.
   - With a **specific app** selected: Moves **each window of that type** into its own unique, new workspace.
 - **Explode by App**: 
   - With **"All"** selected: Groups windows by their type (e.g., all Firefox windows move together to one new workspace, all terminals move to another).
   - With a **specific app** selected: Moves **all windows of that type** together into a single new workspace.
-- **Explode by Token**: Type a keyword in the **Token...** box (revealed on hover). Moves all windows containing that keyword in their title to a new workspace.
+- **Explode by Token**: Enter a keyword in the **Token...** box. Moves all windows containing that keyword in their title to a new workspace.
 
 ---
 
 ### The "Collect" Suite (Gather)
 The Collect tools gather windows from across your entire system into your **selected workspace**.
 
-- **Dropdown Filter**: Hover over **Collect by App** to see all applications currently running in any workspace.
-- **Collect**: Pulls **all windows** from every other workspace into the one you have selected.
-- **Collect by App**: Select an application from the dropdown. Pulls all windows of that specific type into your selected workspace.
-- **Collect by Token**: Type a keyword in the **Token...** box. Pulls all windows containing that keyword in their title from across all workspaces into the selected one.
+- **Consolidated Controls**: The "Collect All" functionality is now integrated directly into **Collect by App** via a default **"All"** option.
+- **Collect by App**: 
+  - With **"All"** selected (default): Pulls **all windows** from every other workspace into the one you have selected.
+  - With a **specific app** selected: Pulls only windows of that type into your selected workspace.
+- **Collect by Token**: Enter a keyword in the **Token...** box. Pulls all windows containing that keyword in their title from across all workspaces into the selected one.
 
 ---
 
