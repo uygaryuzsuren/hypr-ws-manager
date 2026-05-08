@@ -2,10 +2,15 @@
 
 # Get the absolute path to the project directory
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-DESKTOP_FILE="$HOME/.local/share/applications/hypr-ws-manager.desktop"
+APPS_DIR="$HOME/.local/share/applications"
 ICON_DIR="$HOME/.local/share/icons"
+DESKTOP_FILE="$APPS_DIR/hypr-ws-manager.desktop"
 
 echo "Installing Hyprland Workspace Manager to $PROJECT_DIR..."
+
+# 0. Ensure directories exist
+mkdir -p "$APPS_DIR"
+mkdir -p "$ICON_DIR"
 
 # 1. Generate the .desktop file
 cat <<EOF > "$DESKTOP_FILE"
