@@ -6,17 +6,24 @@ A lightweight Python GUI for managing, naming, and navigating Hyprland workspace
 ![App Icon](assets/icon.svg)
 
 ## Features
-- **Custom Naming:** Assign custom names to workspaces.
-- **Explode Workspace:**
-    - **All:** Distribute windows individually.
-    - **By App:** Group windows by application type.
-    - **By Token:** Group windows by title match.
-- **Auto-Reset:** Automatically clears names when a workspace becomes empty.
-- **Smart Launching:** Opens centered in floating mode and stays on top.
-- **Auto-Close:** Automatically closes after navigating to a workspace.
-- **Quick Search:** Filter workspaces by name or ID.
-- **Dark/Light Themes:** Built-in theme support with adjustable transparency.
-- **Escape to Close:** Quickly dismiss the manager with the `Esc` key.
+- **Custom Naming:** Assign and manage custom names for your workspaces.
+- **Explode Suite (Redistribute):**
+    - **All:** Distribute every window to its own new workspace.
+    - **Selective:** Distribute only windows of a chosen application type.
+    - **By App:** Group multiple windows of the same type into a new workspace.
+    - **By Token:** Group windows matching a title keyword into a new workspace.
+- **Collect Suite (Gather):**
+    - **All:** Pull all windows from every workspace into the selected one.
+    - **By App:** Gather all windows of a specific type from across the system.
+    - **By Token:** Gather windows matching a title keyword from any workspace.
+- **Deep Search:** Instantly filter workspaces by ID, name, application class, or **individual window titles**.
+- **Visual Polish:**
+    - **Multi-Icon Support:** View up to 5 icons per workspace representing open apps.
+    - **Active Workspace Highlight:** Visually identify your current location in the list.
+    - **Auto-Theming:** Dark and Light mode support with adjustable transparency.
+- **Smart Launching:** Opens centered in floating mode, stays on top, and focuses search automatically.
+- **Keyboard Optimized:** Full navigation via Arrow Keys/Tab and Enter; Escape to close.
+- **Auto-Reset:** Automatically clears names and configuration for empty workspaces.
 
 ## Installation & Setup
 
