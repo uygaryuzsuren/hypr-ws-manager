@@ -1,11 +1,12 @@
 # Hyprland Workspace Manager
 
 ![Version](https://img.shields.io/badge/version-0.9.0--beta-orange)
-A lightweight Python GUI for managing, naming, and navigating Hyprland workspaces.
+A lightweight Python GUI for naming, navigating Hyprland workspaces that allows window distribution, collection and pruning for intense workspace users.
 
 ![App Icon](assets/icon.svg)
 
 ## Features
+- **Compliance with hyprctl:** No conflicts with Hyprland since it uses native hyprctl API.
 - **Custom Naming:** Assign and manage custom names for your workspaces.
 - **Explode Suite (Redistribute):**
     - **All:** Distribute every window to its own new workspace.
@@ -46,6 +47,7 @@ chmod +x install.sh
 After running the installer, **Hyprland Workspace Manager** will appear in your application launcher. You can also run it via terminal using `./launch.sh`.
 
 ### Basic Navigation & Controls
+- **Adding a key combination binding in hyprland.conf is highly recommended.**:
 - **Keyboard (Primary)**:
   - **Tab / Arrow Keys**: Navigate through the workspace list.
   - **Enter**: Switch to the selected workspace.
