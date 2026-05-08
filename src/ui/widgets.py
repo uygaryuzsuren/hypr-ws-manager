@@ -115,7 +115,13 @@ class WorkspaceItem(QWidget):
         self.editing_finished.emit()
 
     def mousePressEvent(self, event):
-        print(f"DEBUG: WorkspaceItem {self.ws_id} mousePressEvent")
         if event.button() == Qt.LeftButton:
             self.clicked.emit(self.ws_id)
         super().mousePressEvent(event)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        # Limit label width to 80% of container to prevent pushing buttons out
+        if hasattr(self, 'label'):
+            max_w = int(self.width() * 0.8)
+            self.label.setMaximumWidth(max_w)
