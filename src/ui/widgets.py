@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton, QLineEdit, QStackedWidget, QSizePolicy
 from PySide6.QtCore import Signal, Qt
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QIcon, QPixmap, QColor
 import re
 
 class WorkspaceItem(QWidget):
