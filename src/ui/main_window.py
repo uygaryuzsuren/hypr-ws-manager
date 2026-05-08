@@ -556,14 +556,17 @@ class MainWindow(QMainWindow):
                 clean_name = re.sub(r'^\d+-', '', sanitized_name)
                 match = re.search(r'\[(.*?)\]', clean_name)
 
-                # Ensure app_class comes from the window if possible, else the name tag
-                # Only use the window's app class if it's NOT already in the custom name
+                # Extract existing tags and current window tag, then de-duplicate
+                existing_tags = re.findall(r'\[(.*?)\]', clean_name)
                 app_class_tag = app_classes[0] if app_classes else ""
-                if match and match.group(1).lower() in app_class_tag:
-                     display_app_class = match.group(1).lower()
-                else:
-                     display_app_class = app_class_tag if app_class_tag else (match.group(1).lower() if match else "")
-
+                
+                all_tags = []
+                for t in existing_tags + ([app_class_tag] if app_class_tag else []):
+                    if t and t not in all_tags:
+                        all_tags.append(t)
+                
+                tags_str = "".join([f"[{t}]" for t in all_tags])
+                
                 title_to_show = original_title if original_title else re.sub(r'\[.*?\]-', '', clean_name)
                 
                 # Avoid redundant ID at the end
@@ -573,11 +576,11 @@ class MainWindow(QMainWindow):
                 if len(str(title_to_show)) > 80:
                     title_to_show = str(title_to_show)[:80] + "..."
                 
-                if display_app_class:
-                    if title_to_show and title_to_show != display_app_class:
-                        display_name = f"{ws_id}-[{display_app_class}]-{title_to_show}"
+                if tags_str:
+                    if title_to_show and title_to_show not in all_tags:
+                        display_name = f"{ws_id}-{tags_str}-{title_to_show}"
                     else:
-                        display_name = f"{ws_id}-[{display_app_class}]"
+                        display_name = f"{ws_id}-{tags_str}"
                 else:
                     display_name = f"{ws_id}-{title_to_show}" if title_to_show else str(ws_id)
 
