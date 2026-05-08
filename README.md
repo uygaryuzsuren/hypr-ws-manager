@@ -99,3 +99,6 @@ To remove the desktop launcher and icon from your system:
 chmod +x uninstall.sh
 ./uninstall.sh
 ```
+
+## License
+This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the [LICENSE](LICENSE) file for details.
