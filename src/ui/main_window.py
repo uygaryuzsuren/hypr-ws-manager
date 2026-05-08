@@ -90,14 +90,14 @@ class MainWindow(QMainWindow):
         self.explode_btn.clicked.connect(self.on_explode_all)
         explode_layout.addWidget(self.explode_btn)
 
-        self.explode_app_btn = QPushButton("Explode by App")
-        self.explode_app_btn.clicked.connect(self.on_explode_by_app)
-        explode_layout.addWidget(self.explode_app_btn)
-
         self.app_selector_explode = QComboBox()
         self.app_selector_explode.setMinimumWidth(150)
         self.app_selector_explode.hide()
         explode_layout.addWidget(self.app_selector_explode)
+
+        self.explode_app_btn = QPushButton("Explode by App")
+        self.explode_app_btn.clicked.connect(self.on_explode_by_app)
+        explode_layout.addWidget(self.explode_app_btn)
 
         self.explode_token_btn = QPushButton("Explode by Token")
         self.explode_token_btn.clicked.connect(self.on_explode_by_token)
@@ -142,6 +142,7 @@ class MainWindow(QMainWindow):
         self.token_input_collect.textChanged.connect(self.token_input_explode.setText)
 
         # Install event filters for hover
+        self.explode_btn.installEventFilter(self)
         self.explode_app_btn.installEventFilter(self)
         self.app_selector_explode.installEventFilter(self)
         self.explode_token_btn.installEventFilter(self)
@@ -304,6 +305,12 @@ class MainWindow(QMainWindow):
 
         all_windows = self.hypr.get_all_windows()
         windows = [w for w in all_windows if int(w['workspace']['id']) == int(source_ws_id)]
+        
+        selected_type = self.app_selector_explode.currentText()
+        # Filter windows if a specific app is selected
+        if selected_type != "All":
+            windows = [w for w in windows if w['class'] == selected_type]
+
         if not windows:
             self.is_exploding = False
             return
@@ -465,9 +472,9 @@ class MainWindow(QMainWindow):
         self.cleanup_empty_workspaces(workspaces)
         
         all_wins = self.hypr.get_all_windows()
-        # Update app selector with unique classes
+        # Update app selector with unique classes (excluding self)
         current_selection = self.app_selector.currentText()
-        all_classes = sorted(list(set(w['class'] for w in all_wins if w['class'])))
+        all_classes = sorted(list(set(w['class'] for w in all_wins if w['class'] and w['class'] != "hypr-ws-manager")))
         self.app_selector.clear()
         self.app_selector.addItems(all_classes)
         if current_selection in all_classes:
@@ -481,7 +488,7 @@ class MainWindow(QMainWindow):
         explode_classes = ["All"]
         if target_ws_id:
             target_wins = [w for w in all_wins if int(w['workspace']['id']) == int(target_ws_id)]
-            explode_classes.extend(sorted(list(set(w['class'] for w in target_wins if w['class']))))
+            explode_classes.extend(sorted(list(set(w['class'] for w in target_wins if w['class'] and w['class'] != "hypr-ws-manager"))))
         
         current_explode_selection = self.app_selector_explode.currentText()
         self.app_selector_explode.clear()
@@ -616,7 +623,7 @@ class MainWindow(QMainWindow):
         if event.type() == QEvent.Enter:
             if source is self.explode_token_btn or source is self.token_input_explode:
                 self.token_input_explode.show()
-            elif source is self.explode_app_btn or source is self.app_selector_explode:
+            elif source in (self.explode_btn, self.explode_app_btn, self.app_selector_explode):
                 self.app_selector_explode.show()
             elif source is self.collect_app_btn or source is self.app_selector:
                 self.app_selector.show()
@@ -625,7 +632,7 @@ class MainWindow(QMainWindow):
                 
         elif event.type() == QEvent.Leave:
             if source in (self.explode_token_btn, self.token_input_explode, 
-                         self.explode_app_btn, self.app_selector_explode,
+                         self.explode_btn, self.explode_app_btn, self.app_selector_explode,
                          self.collect_app_btn, self.app_selector,
                          self.collect_token_btn, self.token_input_collect):
                 QTimer.singleShot(100, self.update_dynamic_visibility)
@@ -639,7 +646,7 @@ class MainWindow(QMainWindow):
             
         # Explode row - App Selector
         view_explode_visible = self.app_selector_explode.view().isVisible() if self.app_selector_explode.view() else False
-        if not self.app_selector_explode.hasFocus() and not self.explode_app_btn.underMouse() and not self.app_selector_explode.underMouse() and not view_explode_visible:
+        if not self.app_selector_explode.hasFocus() and not self.explode_app_btn.underMouse() and not self.explode_btn.underMouse() and not self.app_selector_explode.underMouse() and not view_explode_visible:
             self.app_selector_explode.hide()
         
         # Collect row - App Selector

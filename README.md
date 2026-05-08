@@ -31,29 +31,39 @@ chmod +x install.sh
 
 After running the installer, **Hyprland Workspace Manager** will appear in your application launcher. You can also run it via terminal using `./launch.sh`.
 
-### Basic Navigation
-- **Search Bar**: Type to filter workspaces by ID, custom name, or application class.
-- **Switching**: Use **Arrow Keys** to select a workspace and press **Enter**, or simply **Click** an item to switch to it instantly.
-- **Closing**: Press **Escape** to dismiss the manager without switching.
-- **Renaming**: Click the **✎** icon next to a workspace name to enter a custom title. Press **Enter** to save or **✕** to cancel.
+### Basic Navigation & Controls
+- **Keyboard (Primary)**:
+  - **Tab / Arrow Keys**: Navigate through the workspace list.
+  - **Enter**: Switch to the selected workspace.
+  - **Search**: Start typing immediately upon launch to filter workspaces by name, ID, or window titles.
+  - **Escape**: Close the manager instantly.
+- **Mouse**:
+  - **Click**: Switch to a workspace instantly.
+  - **Edit (✎ icon)**: Click to rename a workspace. Press Enter to save.
 
 ---
 
 ### The "Explode" Suite (Redistribute)
-The Explode tools help you clean up a cluttered workspace by moving its windows to new, dedicated workspaces. Select the workspace you want to "explode" in the list, then use:
+The Explode tools help you clean up a cluttered workspace by moving its windows to new, dedicated workspaces. Select a source workspace from the list, then use:
 
-- **Explode**: Moves **every window** from the selected workspace into its own separate, new workspace.
-- **Explode by App**: Groups windows of the **same application type** (e.g., all Firefox windows) into their own new workspaces.
-- **Explode by Token**: Type a keyword in the **Token...** box. Clicking this will move all windows containing that keyword in their title to a new workspace.
+- **Dropdown Filter**: Hover over **Explode** or **Explode by App** to reveal a dropdown. It lists all application types found in the selected workspace (e.g., `firefox`, `kitty`).
+- **Explode**: 
+  - With **"All"** selected: Moves **every window** from the source workspace into its own separate, new workspace.
+  - With a **specific app** selected: Moves **each window of that type** into its own unique, new workspace.
+- **Explode by App**: 
+  - With **"All"** selected: Groups windows by their type (e.g., all Firefox windows move together to one new workspace, all terminals move to another).
+  - With a **specific app** selected: Moves **all windows of that type** together into a single new workspace.
+- **Explode by Token**: Type a keyword in the **Token...** box (revealed on hover). Moves all windows containing that keyword in their title to a new workspace.
 
 ---
 
 ### The "Collect" Suite (Gather)
-The Collect tools do the opposite—they gather windows from across your entire system into your **selected workspace**.
+The Collect tools gather windows from across your entire system into your **selected workspace**.
 
+- **Dropdown Filter**: Hover over **Collect by App** to see all applications currently running in any workspace.
 - **Collect**: Pulls **all windows** from every other workspace into the one you have selected.
-- **Collect by App**: Select an application from the **dropdown menu** (e.g., `kitty`). Clicking this pulls all windows of that specific type into your selected workspace.
-- **Collect by Token**: Type a keyword in the **Token...** box. Clicking this pulls all windows containing that keyword in their title from across all workspaces into the selected one.
+- **Collect by App**: Select an application from the dropdown. Pulls all windows of that specific type into your selected workspace.
+- **Collect by Token**: Type a keyword in the **Token...** box. Pulls all windows containing that keyword in their title from across all workspaces into the selected one.
 
 ---
 
