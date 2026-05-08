@@ -27,9 +27,9 @@ EOF
 
 # 2. Install the icon
 mkdir -p "$ICON_DIR"
-cp "$PROJECT_DIR/assets/icon.svg" "$ICON_DIR/hypr-ws-manager.svg"
+cp "$PROJECT_DIR/assets/icon.png" "$ICON_DIR/hypr-ws-manager.png"
 
 echo "Installation complete!"
 echo "Desktop entry created at: $DESKTOP_FILE"
-echo "Icon installed to: $ICON_DIR/hypr-ws-manager.svg"
+echo "Icon installed to: $ICON_DIR/hypr-ws-manager.png"
 echo "You can now find the app in your application launcher."

@@ -3,7 +3,7 @@
 ![Version](https://img.shields.io/badge/version-0.9.0--beta-orange)
 A lightweight Python GUI for naming, navigating Hyprland workspaces that allows window distribution, collection and pruning for intense workspace users.
 
-![App Icon](assets/icon.svg)
+![App Icon](assets/icon.png)
 
 ## Features
 - **Compliance with hyprctl:** No conflicts with Hyprland since it uses native hyprctl API.
