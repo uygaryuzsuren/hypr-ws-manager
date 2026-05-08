@@ -557,7 +557,12 @@ class MainWindow(QMainWindow):
                 match = re.search(r'\[(.*?)\]', clean_name)
 
                 # Ensure app_class comes from the window if possible, else the name tag
-                display_app_class = app_classes[0] if app_classes else (match.group(1).lower() if match else "")
+                # Only use the window's app class if it's NOT already in the custom name
+                app_class_tag = app_classes[0] if app_classes else ""
+                if match and match.group(1).lower() in app_class_tag:
+                     display_app_class = match.group(1).lower()
+                else:
+                     display_app_class = app_class_tag if app_class_tag else (match.group(1).lower() if match else "")
 
                 title_to_show = original_title if original_title else re.sub(r'\[.*?\]-', '', clean_name)
                 
@@ -569,7 +574,7 @@ class MainWindow(QMainWindow):
                     title_to_show = str(title_to_show)[:80] + "..."
                 
                 if display_app_class:
-                    if title_to_show:
+                    if title_to_show and title_to_show != display_app_class:
                         display_name = f"{ws_id}-[{display_app_class}]-{title_to_show}"
                     else:
                         display_name = f"{ws_id}-[{display_app_class}]"
