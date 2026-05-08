@@ -635,10 +635,14 @@ class MainWindow(QMainWindow):
 
     def rename_workspace(self, ws_id, new_name):
         import re
-        # Strip ID- prefix and [class]- prefix if they exist to avoid recursive prefixing
-        clean_name = re.sub(r'^\d+-(\[.*?\]-)?', '', new_name)
-        # Also handle case where it's just the ID
-        if clean_name == str(ws_id):
+        # Remove ID- prefix and all [tag] prefixes
+        clean_name = re.sub(r'^\d+-', '', new_name)
+        clean_name = re.sub(r'(\[.*?\]-?)', '', clean_name)
+        # Final trim
+        clean_name = clean_name.strip()
+        
+        # If it's effectively empty or just the ws_id, store as empty to let auto-namer handle it
+        if clean_name == str(ws_id) or not clean_name:
             clean_name = ""
             
         self.config.set_workspace_name(ws_id, clean_name)
