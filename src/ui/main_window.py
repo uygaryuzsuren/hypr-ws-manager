@@ -584,11 +584,10 @@ class MainWindow(QMainWindow):
                     display_name += "-" + tags_str
                 
                 if title_to_show and title_to_show not in all_tags:
-                    # If we already have a tag, ensure we add a dash before the title
-                    if display_name != str(ws_id):
-                        display_name += "-" + title_to_show
-                    else:
-                        display_name += "-" + title_to_show
+                    display_name += "-" + title_to_show
+                
+                # Final cleanup to remove any potential trailing dash
+                display_name = display_name.rstrip('-')
 
             else:
                 display_app_class = app_classes[0] if app_classes else ""
