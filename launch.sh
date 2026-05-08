@@ -23,34 +23,56 @@ fi
 # Define the virtual environment directory
 VENV_DIR=".venv"
 
+# Check if setup is needed and if we should open a terminal for visibility
+if [ ! -d "$VENV_DIR" ] && [ "$1" != "--setup" ] && [ ! -t 0 ]; then
+    # List of common terminal emulators
+    for term in kitty alacritty foot xfce4-terminal gnome-terminal konsole xterm; do
+        if command -v $term >/dev/null 2>&1; then
+            case $term in
+                gnome-terminal|konsole|xfce4-terminal) exec $term -- "$DIR/launch.sh" --setup ;;
+                *) exec $term "$DIR/launch.sh" --setup ;;
+            esac
+        fi
+    done
+fi
+
 # Create virtual environment if it doesn't exist
 if [ ! -d "$VENV_DIR" ]; then
     echo "-------------------------------------------------------"
     echo "  Hyprland Workspace Manager - First Run Setup"
     echo "-------------------------------------------------------"
     echo "Creating virtual environment and installing dependencies..."
-    echo "This may take a minute. Please wait..."
+    echo "This may take a minute depending on your connection."
     
-    # Show a notification with the logo if notify-send is available
+    # Notifications for those who might not see the terminal immediately
     if command -v notify-send >/dev/null 2>&1; then
-        notify-send "Hyprland Workspace Manager" "Installing dependencies...\nPlease wait while we set things up." -i "$DIR/assets/icon.svg" -t 10000
-    fi
-    
-    # Fallback/Additional Hyprland notification
-    if command -v hyprctl >/dev/null 2>&1; then
-        hyprctl notify 1 10000 "rgb(4c4f69)" "Installing dependencies... Please wait."
+        notify-send "Hyprland Workspace Manager" "Installing dependencies...\nPlease see the terminal for progress." -i "$DIR/assets/icon.svg" -t 5000
     fi
 
-    $PYTHON_CMD -m venv "$VENV_DIR"
-    
-    # Activate and install requirements immediately after creation
-    source "$VENV_DIR/bin/activate"
-    pip install --upgrade pip
-    pip install -r requirements.txt
-    
-    if command -v notify-send >/dev/null 2>&1; then
-        notify-send "Hyprland Workspace Manager" "Setup complete! Launching app..." -i "$DIR/assets/icon.svg" -t 3000
+    if ! $PYTHON_CMD -m venv "$VENV_DIR"; then
+        echo "Error: Failed to create virtual environment."
+        [ ! -t 0 ] || { echo "Press any key to exit..."; read -n 1; }
+        exit 1
     fi
+    
+    source "$VENV_DIR/bin/activate"
+    echo "Upgrading pip..."
+    pip install --upgrade pip --quiet
+    
+    echo "Installing requirements..."
+    if ! pip install -r requirements.txt; then
+        echo "-------------------------------------------------------"
+        echo "Error: Failed to install dependencies."
+        echo "Please check your internet connection and try again."
+        echo "-------------------------------------------------------"
+        [ ! -t 0 ] || { echo "Press any key to exit..."; read -n 1; }
+        exit 1
+    fi
+    
+    echo "-------------------------------------------------------"
+    echo "Setup complete! Launching app..."
+    echo "-------------------------------------------------------"
+    sleep 2
 else
     # Activate existing environment
     source "$VENV_DIR/bin/activate"
