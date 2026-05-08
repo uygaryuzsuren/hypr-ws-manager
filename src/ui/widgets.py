@@ -38,12 +38,21 @@ class WorkspaceItem(QWidget):
         
         # Icons
         for app_class in self.app_classes[:5]: # Show max 5 icons
+            icon_label = QLabel()
+            icon_label.setAttribute(Qt.WA_TransparentForMouseEvents)
             icon = QIcon.fromTheme(app_class)
-            if not icon.isNull():
-                icon_label = QLabel()
-                icon_label.setAttribute(Qt.WA_TransparentForMouseEvents)
+            
+            if icon.isNull():
+                # Subtle placeholder for missing icons
+                pixmap = QPixmap(20, 20)
+                # Using a transparent placeholder color based on the theme
+                fill_color = QColor(200, 200, 200, 50) 
+                pixmap.fill(fill_color)
+                icon_label.setPixmap(pixmap)
+            else:
                 icon_label.setPixmap(icon.pixmap(20, 20))
-                self.display_layout.addWidget(icon_label)
+                
+            self.display_layout.addWidget(icon_label)
 
         self.label = QLabel(self.display_name)
         self.label.setAttribute(Qt.WA_TransparentForMouseEvents)
