@@ -557,7 +557,7 @@ class MainWindow(QMainWindow):
                 match = re.search(r'\[(.*?)\]', clean_name)
 
                 # Ensure app_class comes from the window if possible, else the name tag
-                display_app_class = app_classes[0] if app_classes else (match.group(1).lower() if match else "application-x-executable")
+                display_app_class = app_classes[0] if app_classes else (match.group(1).lower() if match else "")
 
                 title_to_show = original_title if original_title else re.sub(r'\[.*?\]-', '', clean_name)
                 
@@ -568,17 +568,23 @@ class MainWindow(QMainWindow):
                 if len(str(title_to_show)) > 80:
                     title_to_show = str(title_to_show)[:80] + "..."
                 
-                if title_to_show:
-                    display_name = f"{ws_id}-[{display_app_class}]-{title_to_show}"
+                if display_app_class:
+                    if title_to_show:
+                        display_name = f"{ws_id}-[{display_app_class}]-{title_to_show}"
+                    else:
+                        display_name = f"{ws_id}-[{display_app_class}]"
                 else:
-                    display_name = f"{ws_id}-[{display_app_class}]"
+                    display_name = f"{ws_id}-{title_to_show}" if title_to_show else str(ws_id)
 
             else:
-                display_app_class = app_classes[0] if app_classes else "application-x-executable"
-                if original_title and str(original_title) != str(ws_id):
-                    display_name = f"{ws_id}-[{display_app_class}]-{original_title}"
+                display_app_class = app_classes[0] if app_classes else ""
+                if display_app_class:
+                    if original_title and str(original_title) != str(ws_id):
+                        display_name = f"{ws_id}-[{display_app_class}]-{original_title}"
+                    else:
+                        display_name = f"{ws_id}-[{display_app_class}]"
                 else:
-                    display_name = f"{ws_id}-[{display_app_class}]"
+                    display_name = f"{ws_id}-{original_title}" if original_title and str(original_title) != str(ws_id) else str(ws_id)
             
             # Check if search matches display name OR any window title in this workspace
             match_found = False

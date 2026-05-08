@@ -38,19 +38,12 @@ class WorkspaceItem(QWidget):
         
         # Icons
         for app_class in self.app_classes[:5]: # Show max 5 icons
-            icon_label = QLabel()
-            icon_label.setAttribute(Qt.WA_TransparentForMouseEvents)
             icon = QIcon.fromTheme(app_class)
-            
-            if icon.isNull():
-                # Fallback to a solid black 20x20 placeholder
-                pixmap = QPixmap(20, 20)
-                pixmap.fill(Qt.black)
-                icon_label.setPixmap(pixmap)
-            else:
+            if not icon.isNull():
+                icon_label = QLabel()
+                icon_label.setAttribute(Qt.WA_TransparentForMouseEvents)
                 icon_label.setPixmap(icon.pixmap(20, 20))
-                
-            self.display_layout.addWidget(icon_label)
+                self.display_layout.addWidget(icon_label)
 
         self.label = QLabel(self.display_name)
         self.label.setAttribute(Qt.WA_TransparentForMouseEvents)
