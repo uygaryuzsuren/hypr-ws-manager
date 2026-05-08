@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLineEdit, QListWidget, QListWidgetItem, QPushButton, QLabel, QComboBox)
 from PySide6.QtCore import Qt, QTimer, QThread, QEvent, QSize
+from PySide6.QtGui import QGuiApplication
 from src.ui.widgets import WorkspaceItem
 from src.ui.settings_window import SettingsWindow
 from src import __version__
@@ -14,6 +15,12 @@ class MainWindow(QMainWindow):
         self.is_exploding = False
         self.setWindowTitle(f"Hyprland Workspace Manager {__version__}")
         self.setMinimumSize(800, 600)
+        
+        # Set dynamic maximum size (4/5 of total viewport)
+        screen = QGuiApplication.primaryScreen().geometry()
+        max_w = int(screen.width() * 0.8)
+        max_h = int(screen.height() * 0.8)
+        self.setMaximumSize(max_w, max_h)
 
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
