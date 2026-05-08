@@ -80,4 +80,14 @@ fi
 
 # Run the application in the background and detach from terminal
 echo "Launching Hyprland Workspace Manager..."
-setsid python run.py >/dev/null 2>&1 &
+VENV_PYTHON="$DIR/$VENV_DIR/bin/python"
+
+if [ "$1" == "--setup" ]; then
+    # When finishing setup in a terminal, we must ensure the process is fully 
+    # detached before the terminal closes, or the connection to the compositor might break.
+    ( setsid "$VENV_PYTHON" "$DIR/run.py" >/dev/null 2>&1 & )
+    sleep 0.5
+else
+    # Standard silent launch
+    setsid "$VENV_PYTHON" "$DIR/run.py" >/dev/null 2>&1 &
+fi
