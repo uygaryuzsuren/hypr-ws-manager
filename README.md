@@ -47,7 +47,7 @@ chmod +x install.sh
 After running the installer, **Hyprland Workspace Manager** will appear in your application launcher. You can also run it via terminal using `./launch.sh`.
 
 ### Basic Navigation & Controls
-- **Adding a key combination binding in hyprland.conf is highly recommended.**:
+- **Adding a key combination binding in hyprland.conf is highly recommended.**
 - **Keyboard (Primary)**:
   - **Tab / Arrow Keys**: Navigate through the workspace list.
   - **Enter**: Switch to the selected workspace.
