@@ -638,8 +638,8 @@ class MainWindow(QMainWindow):
         # Remove ID- prefix and all [tag] prefixes
         clean_name = re.sub(r'^\d+-', '', new_name)
         clean_name = re.sub(r'(\[.*?\]-?)', '', clean_name)
-        # Final trim
-        clean_name = clean_name.strip()
+        # Strip any leading dashes or whitespace
+        clean_name = clean_name.lstrip('-').strip()
         
         # If it's effectively empty or just the ws_id, store as empty to let auto-namer handle it
         if clean_name == str(ws_id) or not clean_name:
