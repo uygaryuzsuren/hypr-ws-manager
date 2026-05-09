@@ -9,7 +9,8 @@ class Config:
         "hyprctl_path": which("hyprctl") or "hyprctl",
         "theme": "dark",
         "transparency": 0.9,
-        "workspace_names": {}
+        "workspace_names": {},
+        "tracking_enabled": False
     }
 
     def __init__(self):
@@ -65,6 +66,15 @@ class Config:
     @transparency.setter
     def transparency(self, value):
         self.data["transparency"] = value
+        self.save()
+
+    @property
+    def tracking_enabled(self):
+        return self.data.get("tracking_enabled", False)
+
+    @tracking_enabled.setter
+    def tracking_enabled(self, value):
+        self.data["tracking_enabled"] = value
         self.save()
 
     def get_workspace_name(self, ws_id):

@@ -2,8 +2,12 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QLineEdit, QListWidget, QListWidgetItem, QPushButton, QLabel, QComboBox)
 from PySide6.QtCore import Qt, QTimer, QThread, QEvent, QSize
 from PySide6.QtGui import QGuiApplication
+import json
+import time
+from pathlib import Path
 from src.ui.widgets import WorkspaceItem
 from src.ui.settings_window import SettingsWindow
+from src.ui.overview_window import OverviewWindow
 from src import __version__
 
 class MainWindow(QMainWindow):
@@ -93,6 +97,14 @@ class MainWindow(QMainWindow):
         self.list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.main_layout.addWidget(self.list_widget)
 
+        # Overview and Action Buttons
+        overview_layout = QHBoxLayout()
+        self.overview_btn = QPushButton("Overview")
+        self.overview_btn.clicked.connect(self.open_overview)
+        overview_layout.addWidget(self.overview_btn)
+        overview_layout.addStretch()
+        self.main_layout.addLayout(overview_layout)
+
         explode_layout = QHBoxLayout()
         self.explode_btn = QPushButton("Explode")
         self.explode_btn.clicked.connect(self.on_explode_all)
@@ -144,6 +156,19 @@ class MainWindow(QMainWindow):
         self.token_input_collect.hide()
         collect_layout.addWidget(self.token_input_collect)
         
+        self.collect_garbage_btn = QPushButton("Collect Garbage")
+        self.collect_garbage_btn.clicked.connect(self.on_collect_garbage)
+        self.collect_garbage_btn.setVisible(self.config.tracking_enabled)
+        collect_layout.addWidget(self.collect_garbage_btn)
+
+        self.garbage_time_selector = QComboBox()
+        self.garbage_time_selector.addItems([
+            "15 minutes", "30 minutes", "45 minutes", "1 hour", "2 hours", 
+            "3 hours", "6 hours", "12 hours", "24 hours", "36 hours", "72 hours", "Older"
+        ])
+        self.garbage_time_selector.hide()
+        collect_layout.addWidget(self.garbage_time_selector)
+        
         # Bottom row
         self.main_layout.addLayout(collect_layout)
 
@@ -157,6 +182,10 @@ class MainWindow(QMainWindow):
         self.error_label.hide()
         self.main_layout.addWidget(self.error_label)
 
+    def open_overview(self):
+        dialog = OverviewWindow(self.config, self.hypr, self)
+        dialog.exec()
+
     def open_settings(self):
         dialog = SettingsWindow(self.config, self)
         if dialog.exec():
@@ -167,6 +196,14 @@ class MainWindow(QMainWindow):
     def navigate_to_workspace(self, ws_id):
         self.hypr.switch_to_workspace(ws_id)
         self.close()
+
+    def on_item_clicked(self, ws_id, item):
+        # If the item is already selected, navigate
+        if self.list_widget.currentItem() == item:
+            self.navigate_to_workspace(ws_id)
+        else:
+            # Otherwise, just select it
+            self.list_widget.setCurrentItem(item)
 
     def on_explode_by_app(self):
         # Reveal input on first click
@@ -430,7 +467,70 @@ class MainWindow(QMainWindow):
         self.is_exploding = False
         self.refresh_workspaces()
 
+    def on_collect_garbage(self):
+        # Reveal selector on first click
+        if self.garbage_time_selector.isHidden():
+            self.garbage_time_selector.show()
+            self.garbage_time_selector.setFocus()
+            return
+
+        # Get the selected duration
+        selection = self.garbage_time_selector.currentText()
+        
+        # Calculate threshold in seconds
+        now = int(time.time())
+        threshold = 0
+        
+        if "minute" in selection:
+            threshold = int(selection.split()[0]) * 60
+        elif "hour" in selection:
+            threshold = int(selection.split()[0]) * 3600
+        elif selection == "Older":
+            threshold = 72 * 3600 
+        
+        cutoff = now - threshold
+        
+        # Read activity state
+        cache_file = Path.home() / ".cache" / "hypr-ws-manager" / "activity.json"
+        if not cache_file.exists():
+            return
+            
+        try:
+            with open(cache_file, 'r') as f:
+                activity = json.load(f)
+        except (json.JSONDecodeError, IOError):
+            return
+
+        # Get target workspace (the one the app is in)
+        active_ws = self.hypr.get_active_workspace()
+        if not active_ws: return
+        target_ws_id = active_ws['id']
+
+        self.is_exploding = True
+        
+        all_windows = self.hypr.get_all_windows()
+        for window in all_windows:
+            addr = window['address']
+            win_ws = int(window['workspace']['id'])
+            
+            # Only consider windows NOT in the target workspace
+            if win_ws != int(target_ws_id):
+                last_active = activity.get(addr, 0)
+                if last_active < cutoff:
+                    self.hypr.move_window_to_workspace(addr, target_ws_id)
+        
+        self.is_exploding = False
+        self.refresh_workspaces()
+
     def apply_settings(self):
+        # Update visibility of garbage collection feature
+        if hasattr(self, 'collect_garbage_btn'):
+            is_enabled = self.config.tracking_enabled
+            self.collect_garbage_btn.setVisible(is_enabled)
+            # If disabling, also hide the selector
+            if not is_enabled:
+                self.garbage_time_selector.hide()
+
         alpha = int(self.config.transparency * 255)
         
         if self.config.theme == "dark":
@@ -439,8 +539,11 @@ class MainWindow(QMainWindow):
                 QLineEdit {{ background-color: rgba(49, 50, 68, {alpha}); border: 1px solid #45475a; border-radius: 5px; padding: 5px; color: #cdd6f4; }}
                 QComboBox {{ background-color: rgba(49, 50, 68, {alpha}); border: 1px solid #45475a; border-radius: 5px; padding: 5px 10px; color: #cdd6f4; }}
                 QComboBox::drop-down {{ border: none; }}
-                QListWidget {{ background-color: transparent; border: none; }}
+                QListWidget {{ background-color: transparent; border: none; outline: none; }}
                 QListWidget::item:hover {{ background-color: #313244; border-radius: 5px; }}
+                QListWidget::item:selected {{ background-color: #3572af; border: none; border-radius: 5px; color: #ffffff; }}
+                QListWidget::item:selected:active {{ background-color: #3572af; border: none; }}
+                QListWidget::item:selected:!active {{ background-color: #3572af; border: none; }}
                 QPushButton {{ background-color: rgba(49, 50, 68, {alpha}); border: none; border-radius: 5px; color: #cdd6f4; padding: 8px 12px; }}
                 QPushButton:hover {{ background-color: #45475a; }}
             """)
@@ -450,8 +553,11 @@ class MainWindow(QMainWindow):
                 QLineEdit {{ background-color: rgba(230, 233, 239, {alpha}); border: 1px solid #ccd0da; border-radius: 5px; padding: 5px; color: #4c4f69; }}
                 QComboBox {{ background-color: rgba(204, 208, 218, {alpha}); border: 1px solid #ccd0da; border-radius: 5px; padding: 5px 10px; color: #4c4f69; }}
                 QComboBox::drop-down {{ border: none; }}
-                QListWidget {{ background-color: transparent; border: none; }}
+                QListWidget {{ background-color: transparent; border: none; outline: none; }}
                 QListWidget::item:hover {{ background-color: #ccd0da; border-radius: 5px; }}
+                QListWidget::item:selected {{ background-color: #1e66f5; border: none; border-radius: 5px; color: #ffffff; }}
+                QListWidget::item:selected:active {{ background-color: #1e66f5; border: none; }}
+                QListWidget::item:selected:!active {{ background-color: #1e66f5; border: none; }}
                 QPushButton {{ background-color: rgba(204, 208, 218, {alpha}); border: none; border-radius: 5px; color: #4c4f69; padding: 8px 12px; }}
                 QPushButton:hover {{ background-color: #bcc0cc; }}
             """)
@@ -615,7 +721,10 @@ class MainWindow(QMainWindow):
             item = QListWidgetItem("")
             item.setData(Qt.UserRole, ws_id)
             widget = WorkspaceItem(ws_id, display_name, app_classes=app_classes, is_active=(ws_id == active_id), theme=self.config.theme)
-            widget.clicked.connect(self.navigate_to_workspace)
+            
+            # Connect to handle the 2-click logic
+            widget.clicked.connect(lambda ws_id, item=item: self.on_item_clicked(ws_id, item))
+            
             widget.renamed.connect(self.rename_workspace)
             widget.editing_started.connect(self.on_editing_started)
             widget.editing_finished.connect(self.on_editing_finished)

@@ -1,9 +1,11 @@
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QLineEdit, QSlider, QComboBox, QPushButton, QFileDialog, QMessageBox)
+                             QLineEdit, QSlider, QComboBox, QPushButton, QFileDialog, QMessageBox, QCheckBox)
 from PySide6.QtCore import Qt
 import subprocess
 import os
+import signal
 from shutil import which
+from pathlib import Path
 
 class SettingsWindow(QDialog):
     def __init__(self, config, parent=None):
@@ -24,6 +26,7 @@ class SettingsWindow(QDialog):
                 QComboBox::drop-down { border: none; }
                 QPushButton { background-color: #313244; border: none; border-radius: 5px; color: #cdd6f4; padding: 8px 12px; }
                 QPushButton:hover { background-color: #45475a; }
+                QCheckBox { color: #cdd6f4; }
             """)
         else:
             self.setStyleSheet("""
@@ -34,6 +37,7 @@ class SettingsWindow(QDialog):
                 QComboBox::drop-down { border: none; }
                 QPushButton { background-color: #ccd0da; border: none; border-radius: 5px; color: #4c4f69; padding: 8px 12px; }
                 QPushButton:hover { background-color: #bcc0cc; }
+                QCheckBox { color: #4c4f69; }
             """)
 
     def setup_ui(self):
@@ -70,12 +74,15 @@ class SettingsWindow(QDialog):
         layout.addWidget(QLabel("Transparency (0=Opaque, 100=Transparent):"))
         self.transparency_slider = QSlider(Qt.Horizontal)
         self.transparency_slider.setRange(0, 100)
-        # If config.transparency is actually opacity (0.1 to 1.0),
-        # then opacity 1.0 (opaque) = transparency 0
-        # and opacity 0.1 = transparency 90
         current_transparency = int((1.0 - self.config.transparency) * 100)
         self.transparency_slider.setValue(current_transparency)
         layout.addWidget(self.transparency_slider)
+
+        # Tracking Feature
+        self.tracking_check = QCheckBox("Enable Window Activity Tracking (Required for Garbage Collect)")
+        self.tracking_check.setChecked(self.config.tracking_enabled)
+        self.tracking_check.toggled.connect(self.toggle_tracking)
+        layout.addWidget(self.tracking_check)
 
         # Buttons
         btns_layout = QHBoxLayout()
@@ -87,6 +94,75 @@ class SettingsWindow(QDialog):
         btns_layout.addWidget(save_btn)
         btns_layout.addWidget(cancel_btn)
         layout.addLayout(btns_layout)
+
+    def toggle_tracking(self, checked):
+        if checked:
+            reply = QMessageBox.question(self, "Enable Tracking Service",
+                                        "Enabling this feature will start a background service to track window focus history.\n\n"
+                                        "This is required for the 'Collect Garbage' functionality.\n\n"
+                                        "Do you want to proceed?",
+                                        QMessageBox.Yes | QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                self.enable_tracking_service()
+            else:
+                self.tracking_check.blockSignals(True)
+                self.tracking_check.setChecked(False)
+                self.tracking_check.blockSignals(False)
+        else:
+            reply = QMessageBox.question(self, "Disable Tracking Service",
+                                        "Disabling this feature will stop the background service and remove it from autostart.\n\n"
+                                        "The 'Collect Garbage' button will be hidden.\n\n"
+                                        "Do you want to proceed?",
+                                        QMessageBox.Yes | QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                self.disable_tracking_service()
+            else:
+                self.tracking_check.blockSignals(True)
+                self.tracking_check.setChecked(True)
+                self.tracking_check.blockSignals(False)
+
+    def enable_tracking_service(self):
+        # 1. Create autostart file
+        autostart_dir = Path.home() / ".config" / "autostart"
+        autostart_dir.mkdir(parents=True, exist_ok=True)
+        desktop_file = autostart_dir / "hypr-ws-manager-tracker.desktop"
+        
+        project_dir = Path(__file__).parent.parent.parent.absolute()
+        tracker_script = project_dir / "src" / "tracker.py"
+        
+        # Determine python path
+        venv_python = project_dir / ".venv" / "bin" / "python"
+        cmd = f"{venv_python} {tracker_script}"
+        
+        with open(desktop_file, "w") as f:
+            f.write(f"""[Desktop Entry]
+Type=Application
+Exec={cmd}
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Name=Hyprland Workspace Manager Tracker
+Comment=Tracks window activity for garbage collection
+""")
+        
+        # 2. Start process
+        subprocess.Popen(cmd.split(), start_new_session=True)
+        self.config.tracking_enabled = True
+
+    def disable_tracking_service(self):
+        # 1. Remove autostart file
+        desktop_file = Path.home() / ".config" / "autostart" / "hypr-ws-manager-tracker.desktop"
+        if desktop_file.exists():
+            desktop_file.unlink()
+            
+        # 2. Kill process
+        try:
+            # Simple way to kill the tracker
+            subprocess.run(["pkill", "-f", "src/tracker.py"], check=False)
+        except Exception:
+            pass
+            
+        self.config.tracking_enabled = False
 
     def reset_path(self):
         default_path = which("hyprctl")

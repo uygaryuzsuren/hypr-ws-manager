@@ -62,6 +62,14 @@ class HyprManager:
     def move_window_to_workspace(self, window_address, workspace_id):
         self._run_command(["dispatch", "movetoworkspace", f"{workspace_id},address:{window_address}"])
 
+    def close_window(self, address):
+        """Closes a window by address."""
+        self._run_command(["dispatch", "closewindow", f"address:{address}"])
+
+    def focus_window(self, address):
+        """Focuses a window by address."""
+        self._run_command(["dispatch", "focuswindow", f"address:{address}"])
+
     def set_workspace_name(self, workspace_id, name):
         print(f"DEBUG: Renaming workspace {workspace_id} to {name}")
         self._run_command(["dispatch", "renameworkspace", str(workspace_id), name])

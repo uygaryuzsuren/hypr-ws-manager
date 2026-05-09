@@ -18,6 +18,8 @@ A lightweight Python GUI for naming, navigating Hyprland workspaces that allows 
     - **By App:** Gather all windows of a specific type from across the system.
     - **By Token:** Gather windows matching a title keyword from any workspace.
 - **Deep Search:** Instantly filter workspaces by ID, name, application class, or **individual window titles**.
+- **Workspace Overview:** View a detailed tree structure of all workspaces and their windows with direct navigation and termination controls.
+- **Collect Garbage:** Optional background activity tracking to gather inactive windows automatically.
 - **Visual Polish:**
     - **Multi-Icon Support:** View up to 5 icons per workspace representing open apps.
     - **Active Workspace Highlight:** Visually identify your current location in the list.
@@ -32,6 +34,9 @@ A lightweight Python GUI for naming, navigating Hyprland workspaces that allows 
 
 ### Selective Explode & Dynamic Inputs
 ![Selective Explode](assets/screenshots/selective_explode.png)
+
+### Workspace Overview
+![Workspace Overview](assets/screenshots/overview.png)
 
 ## Installation & Setup
 
@@ -50,14 +55,21 @@ After running the installer, **Hyprland Workspace Manager** will appear in your 
 - **Adding a key combination binding in hyprland.conf is highly recommended.**
 - **Keyboard (Primary)**:
   - **Tab / Arrow Keys**: Navigate through the workspace list.
-  - **Enter**: Switch to the selected workspace.
+  - **Enter**: Select or switch to the selected workspace.
   - **Search**: Start typing immediately upon launch to filter workspaces by name, ID, or window titles.
   - **Escape**: Close the manager instantly.
+- **Interaction (Click-to-Select)**: Mouse interactions in the list now require two clicks—one to focus/select and a second to navigate—preventing accidental jumps.
 - **Collect Suite (Gather):**
     - **By App:** Gather all windows of a specific type (or **All** windows) from across the system into the selected workspace.
     - **By Token:** Gather windows matching a title keyword from any workspace.
 
 ...
+
+### Workspace Overview
+Click the **Overview** button to open a detailed modal view of your system:
+- **Hierarchical Tree**: Expand workspaces to see every open window.
+- **Last Active Stats**: If tracking is enabled, see exactly when each window was last used (e.g., `Mon 08 14:30 (2h 15m ago)`).
+- **Direct Controls**: Use **Navigate** to jump to a specific window/workspace or **Terminate** to close individual windows or clear an entire workspace at once.
 
 ### The "Explode" Suite (Redistribute)
 The Explode tools help you clean up a cluttered workspace by moving its windows to new, dedicated workspaces. Select a source workspace from the list, then use:
@@ -81,6 +93,7 @@ The Collect tools gather windows from across your entire system into your **sele
   - With **"All"** selected (default): Pulls **all windows** from every other workspace into the one you have selected.
   - With a **specific app** selected: Pulls only windows of that type into your selected workspace.
 - **Collect by Token**: Enter a keyword in the **Token...** box. Pulls all windows containing that keyword in their title from across all workspaces into the selected one.
+- **Collect Garbage**: (Visible only if Tracking is enabled) Select a time duration (e.g., 1 hour). All windows that have been inactive longer than that threshold will be moved to your current workspace.
 
 ---
 
@@ -89,6 +102,7 @@ Click the **⚙** icon in the top right to access settings:
 - **Theme**: Switch between Light and Dark modes.
 - **Transparency**: Adjust the window opacity (from Opaque to Glass-like).
 - **hyprctl Path**: If you are using a non-standard Hyprland installation, you can configure the path to your `hyprctl` binary here.
+- **Window Activity Tracking**: Enable this to start a lightweight background daemon that tracks focus history, enabling the "Collect Garbage" and "Overview" timestamp features.
 
 ---
 
