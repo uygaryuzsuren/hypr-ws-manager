@@ -95,12 +95,13 @@ Click the **⚙** icon in the top right to access settings:
 ## Configuration
 Settings are stored in `~/.config/hypr-ws-manager/config.json`. You can adjust the `hyprctl` path, theme, and transparency directly through the in-app settings menu.
 
-## Uninstallation
+## Uninstallation & Cleanup
 To remove the desktop launcher and icon from your system:
 ```bash
 chmod +x uninstall.sh
 ./uninstall.sh
 ```
+Then you can just remove the app folder (hypr-ws-manager by default) either in your file manager or with rm -rf command.
 
 ## License
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the [LICENSE](LICENSE) file for details.
