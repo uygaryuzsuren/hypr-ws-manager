@@ -105,7 +105,6 @@ class OverviewWindow(QDialog):
 
     def on_navigate_ws(self, ws_id):
         self.hypr.switch_to_workspace(ws_id)
-        self.accept()
 
     def on_terminate_ws(self, ws_id):
         all_wins = self.hypr.get_all_windows()
@@ -133,7 +132,6 @@ class OverviewWindow(QDialog):
 
         self.hypr.switch_to_workspace(ws_id)
         self.hypr.focus_window(addr)
-        self.accept()
 
     def on_terminate_win(self, addr):
         self.hypr.close_window(addr)

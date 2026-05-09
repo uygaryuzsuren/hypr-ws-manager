@@ -47,9 +47,9 @@ class MainWindow(QMainWindow):
         if self.is_exploding:
             return
             
-        active_ws = self.hypr.get_active_workspace()
-        if active_ws and active_ws['id'] != self.last_workspace_id:
-            self.close()
+        #active_ws = self.hypr.get_active_workspace()
+        #if active_ws and active_ws['id'] != self.last_workspace_id:
+        #    self.close()
         
         self.refresh_workspaces()
 
@@ -195,7 +195,7 @@ class MainWindow(QMainWindow):
 
     def navigate_to_workspace(self, ws_id):
         self.hypr.switch_to_workspace(ws_id)
-        self.close()
+        #self.close()
 
     def on_item_clicked(self, ws_id, item):
         # If the item is already selected, navigate
@@ -225,18 +225,20 @@ class MainWindow(QMainWindow):
             source_ws_id = initial_active_id
         
         all_windows = self.hypr.get_all_windows()
-        windows = [w for w in all_windows if int(w['workspace']['id']) == int(source_ws_id)]
-        if not windows:
+        all_windows = [w for w in all_windows if int(w['workspace']['id']) == int(source_ws_id) and w['class'] != "hypr-ws-manager"]
+        if not all_windows:
             return
 
         self.is_exploding = True
         
         from collections import defaultdict
+        all_grouped_windows = defaultdict(list)
         grouped_windows = defaultdict(list)
-        
+
         selected_type = self.app_selector_explode_app.currentText()
         
-        for win in windows:
+        for win in all_windows:
+            all_grouped_windows[win['class']].append('x')
             if selected_type == "All" or win['class'] == selected_type:
                 grouped_windows[win['class']].append(win)
 
@@ -246,8 +248,12 @@ class MainWindow(QMainWindow):
 
         existing_ids = self.hypr.get_existing_workspace_ids()
         candidate_id = 1
-        
+        count_left = len(all_grouped_windows)
         for app_class, group in grouped_windows.items():
+            
+            if count_left <= 1:
+                break
+
             while candidate_id in existing_ids:
                 candidate_id += 1
             new_ws_id = candidate_id
@@ -263,16 +269,17 @@ class MainWindow(QMainWindow):
             
             name = f"[{clean_class}]-{clean_title}"
             
-            self.hypr.switch_to_workspace(new_ws_id)
+            #self.hypr.switch_to_workspace(new_ws_id)
             for window in group:
                 self.hypr.move_window_to_workspace(window['address'], new_ws_id)
             
+            count_left-=1
             QThread.msleep(100)
             self.hypr.set_workspace_name(new_ws_id, name)
             self.config.set_workspace_name(new_ws_id, name)
             self.config.set_original_title(new_ws_id, win_title)
             
-        self.hypr.switch_to_workspace(initial_active_id)
+        #self.hypr.switch_to_workspace(initial_active_id)
         self.is_exploding = False
         self.refresh_workspaces()
 
@@ -348,19 +355,24 @@ class MainWindow(QMainWindow):
         if not active_ws: return
         initial_active_id = active_ws['id']
 
+        #print("Initial Active Id=" + str(initial_active_id))
+
         # Get source workspace from selection, fallback to active
         current_item = self.list_widget.currentItem()
         if current_item:
             source_ws_id = current_item.data(Qt.UserRole)
+            #print("Selected Id = " + str(source_ws_id))
         else:
             source_ws_id = initial_active_id
         
         self.is_exploding = True
 
         all_windows = self.hypr.get_all_windows()
-        windows = [w for w in all_windows if int(w['workspace']['id']) == int(source_ws_id)]
+        all_windows = [w for w in all_windows if int(w['workspace']['id']) == int(source_ws_id) and w['class'] != "hypr-ws-manager"]
         
         selected_type = self.app_selector_explode_all.currentText()
+
+        windows = all_windows
         # Filter windows if a specific app is selected
         if selected_type != "All":
             windows = [w for w in windows if w['class'] == selected_type]
@@ -377,8 +389,11 @@ class MainWindow(QMainWindow):
             if candidate_id not in existing_ids:
                 available_ws_ids.append(candidate_id)
             candidate_id += 1
-        
+        count_to_move = len(all_windows) 
         for i, window in enumerate(windows):
+            #print("Count to move = " + str(count_to_move))
+            if count_to_move <= 1:
+                break;
             new_ws_id = available_ws_ids[i]
             win_addr = window['address']
             win_title = window['title']
@@ -393,14 +408,15 @@ class MainWindow(QMainWindow):
             
             name = f"[{clean_class}]-{clean_title}"
             
-            self.hypr.switch_to_workspace(new_ws_id)
+            #self.hypr.switch_to_workspace(new_ws_id)
             self.hypr.move_window_to_workspace(win_addr, new_ws_id)
+            count_to_move-=1;
             QThread.msleep(100)
             self.hypr.set_workspace_name(new_ws_id, name)
             self.config.set_workspace_name(new_ws_id, name)
             self.config.set_original_title(new_ws_id, win_title)
             
-        self.hypr.switch_to_workspace(initial_active_id)
+        #self.hypr.switch_to_workspace(initial_active_id)
         self.is_exploding = False
         self.refresh_workspaces()
 

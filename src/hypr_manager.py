@@ -42,6 +42,26 @@ class HyprManager:
                 logging.error("Failed to parse hyprctl output as JSON")
         return None
 
+    def get_active_window(self):
+        output = self._run_command(["activewindow", "-j"])
+        if output:
+            try:
+                return json.loads(output)
+            except json.JSONDecodeError:
+                logging.error("Failed to parse hyprctl activewindow output")
+        return None
+
+    def get_previously_active_window(self):
+        """Finds the window that was active before the manager app took focus."""
+        clients = self.get_all_windows()
+        # Sort by focusHistoryID (0 is current, 1 is previous)
+        # We need the first one that is NOT the manager itself
+        clients.sort(key=lambda x: x.get('focusHistoryID', 999))
+        for c in clients:
+            if c.get('class') != 'hypr-ws-manager':
+                return c
+        return None
+
     def make_floating_and_center(self):
         """Forces the workspace manager window to float, center, and resize."""
         selector = "class:^hypr-ws-manager$"
@@ -60,6 +80,7 @@ class HyprManager:
         return []
 
     def move_window_to_workspace(self, window_address, workspace_id):
+        print(f"DEBUG: Moving {window_address} to {workspace_id}")
         self._run_command(["dispatch", "movetoworkspace", f"{workspace_id},address:{window_address}"])
 
     def close_window(self, address):
