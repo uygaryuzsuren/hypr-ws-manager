@@ -77,7 +77,7 @@ class MainWindow(QMainWindow):
         import re
         try:
             out = subprocess.check_output(["fc-match", "sans-serif"], text=True)
-            match = re.search(r""(.*?)"", out)
+            match = re.search(r"(.*?)", out)
             if match: return match.group(1)
         except: pass
         return "Sans Serif"
@@ -316,20 +316,14 @@ class MainWindow(QMainWindow):
         self.error_label.hide()
         self.main_layout.addWidget(self.error_label)
 
-    def on_new_workspace(self):
-        existing_ids = self.hypr.get_existing_workspace_ids()
-        candidate_id = 1
-        while candidate_id in existing_ids:
-            candidate_id += 1
-        self.hypr.switch_to_workspace(candidate_id)
-        self.refresh_workspaces()
-        
-        # Select the new workspace in the list
-        for i in range(self.list_widget.count()):
-            item = self.list_widget.item(i)
-            if item.data(Qt.UserRole) == candidate_id:
-                self.list_widget.setCurrentItem(item)
-                break
+    def move_self_to_workspace(self, ws_id):
+        # Identify own window by title (as class name might not match)
+        all_wins = self.hypr.get_all_windows()
+        my_win = [w for w in all_wins if Config.APP_NAME in w['title']]
+        if my_win:
+            self.hypr.move_window_to_workspace(my_win[0]['address'], ws_id)
+            self.move_self_to_workspace(ws_id)
+            self.suppress_tracking(my_win[0]['address'])
 
     def open_overview(self):
         dialog = OverviewWindow(self.config, self.hypr, self)
@@ -343,7 +337,7 @@ class MainWindow(QMainWindow):
             self.refresh_workspaces()
 
     def navigate_to_workspace(self, ws_id):
-        self.hypr.switch_to_workspace(ws_id)
+        self.move_self_to_workspace(ws_id)
         #self.close()
 
     def on_item_clicked(self, ws_id, item):
@@ -692,7 +686,13 @@ class MainWindow(QMainWindow):
         self.is_exploding = False
         self.refresh_workspaces()
 
-    def apply_settings(self):
+        self.apply_theme()
+        # Update visibility of garbage collection feature
+        if hasattr(self, "collect_garbage_btn"):
+            is_enabled = self.config.tracking_enabled
+            self.collect_garbage_btn.setVisible(is_enabled)
+            if not is_enabled:
+                self.garbage_time_selector.hide()
         # Update visibility of garbage collection feature
         if hasattr(self, 'collect_garbage_btn'):
             is_enabled = self.config.tracking_enabled
@@ -947,3 +947,40 @@ class MainWindow(QMainWindow):
     def _finish_editing_state(self):
         self.is_editing = False
         self.timer.start(5000)
+
+    def apply_theme(self):
+        alpha = int(self.config.transparency * 255)
+        if self.config.theme == "dark":
+            self.setStyleSheet(f"""
+                QMainWindow, QWidget {{ background-color: rgba(30, 30, 46, {alpha}); color: #cdd6f4; }}
+                QLineEdit {{ background-color: rgba(49, 50, 68, {alpha}); border: 1px solid #45475a; border-radius: 5px; padding: 5px; color: #cdd6f4; }}
+                QComboBox {{ background-color: rgba(49, 50, 68, {alpha}); border: 1px solid #45475a; border-radius: 5px; padding: 5px 10px; color: #cdd6f4; }}
+                QComboBox::drop-down {{ border: none; }}
+                QListWidget {{ background-color: transparent; border: none; outline: none; }}
+                QListWidget::item:hover {{ background-color: #313244; border-radius: 5px; }}
+                QListWidget::item:selected {{ background-color: #3572af; border: none; border-radius: 5px; color: #ffffff; }}
+                QPushButton {{ background-color: rgba(49, 50, 68, {alpha}); border: none; border-radius: 5px; color: #cdd6f4; padding: 8px 12px; }}
+                QPushButton:hover {{ background-color: #45475a; }}
+            """)
+        else:
+            self.setStyleSheet(f"""
+                QMainWindow, QWidget {{ background-color: rgba(241, 241, 241, {alpha}); color: #2e303e; }}
+                QLineEdit {{ background-color: rgba(224, 224, 224, {alpha}); border: 1px solid #999999; border-radius: 5px; padding: 5px; color: #000000; }}
+                QComboBox {{ background-color: rgba(220, 220, 220, {alpha}); border: 1px solid #777777; border-radius: 5px; padding: 5px 10px; color: #000000; }}
+                QComboBox::drop-down {{ border: none; }}
+                QListWidget {{ background-color: transparent; border: none; outline: none; }}
+                QListWidget::item:hover {{ background-color: #dcdcdc; border-radius: 5px; }}
+                QListWidget::item:selected {{ background-color: #999999; border: none; border-radius: 5px; color: #ffffff; }}
+                QPushButton {{ background-color: rgba(220, 220, 220, {alpha}); border: 1px solid #777777; border-radius: 5px; color: #000000; padding: 8px 12px; }}
+                QPushButton:hover {{ background-color: #bfbfbf; }}
+            """)
+
+    def apply_settings(self):
+        self.apply_theme()
+        # Update visibility of garbage collection feature
+        if hasattr(self, 'collect_garbage_btn'):
+            is_enabled = self.config.tracking_enabled
+            self.collect_garbage_btn.setVisible(is_enabled)
+            # If disabling, also hide the selector
+            if not is_enabled:
+                self.garbage_time_selector.hide()
