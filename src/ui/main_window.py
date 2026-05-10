@@ -162,8 +162,21 @@ class MainWindow(QMainWindow):
         self.overview_btn.setIcon(self.create_custom_icon("#89b4fa", "#89b4fa", icon_type="magnifier"))
         self.overview_btn.clicked.connect(self.open_overview)
         overview_layout.addWidget(self.overview_btn)
+        
+        self.new_ws_btn = QPushButton("New Workspace")
+        self.new_ws_btn.clicked.connect(self.on_new_workspace)
+        overview_layout.addWidget(self.new_ws_btn)
+        
         overview_layout.addStretch()
         self.main_layout.addLayout(overview_layout)
+
+    def on_new_workspace(self):
+        existing_ids = self.hypr.get_existing_workspace_ids()
+        candidate_id = 1
+        while candidate_id in existing_ids:
+            candidate_id += 1
+        self.hypr.switch_to_workspace(candidate_id)
+        self.refresh_workspaces()
 
         explode_layout = QHBoxLayout()
         self.explode_btn = QPushButton("Explode")
