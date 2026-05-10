@@ -7,3 +7,4 @@ venv/
 config.json
 *.log
 GEMINI.md
+CHAT_HISTORY_SUMMARY.md
