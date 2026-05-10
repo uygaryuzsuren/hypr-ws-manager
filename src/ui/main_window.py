@@ -1,3 +1,4 @@
+from src.config import Config
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLineEdit, QListWidget, QListWidgetItem, QPushButton, QLabel, QComboBox)
 from PySide6.QtCore import Qt, QTimer, QThread, QEvent, QSize
@@ -317,14 +318,33 @@ class MainWindow(QMainWindow):
         self.main_layout.addWidget(self.error_label)
 
     def move_self_to_workspace(self, ws_id):
-        # Identify own window by title (as class name might not match)
+        # Identify own window by class
         all_wins = self.hypr.get_all_windows()
-        my_win = [w for w in all_wins if Config.APP_NAME in w['title']]
+        # We look for the window with our desktop file name/class
+        my_win = [w for w in all_wins if Config.APP_NAME in w['class']]
         if my_win:
-            self.hypr.move_window_to_workspace(my_win[0]['address'], ws_id)
-            self.move_self_to_workspace(ws_id)
-            self.suppress_tracking(my_win[0]['address'])
+            win_addr = my_win[0]['address']
+            self.suppress_tracking(win_addr)
+            self.hypr.move_window_to_workspace(win_addr, ws_id)
+            self.hypr.switch_to_workspace(ws_id)
 
+
+
+
+    def on_new_workspace(self):
+        existing_ids = self.hypr.get_existing_workspace_ids()
+        candidate_id = 1
+        while candidate_id in existing_ids:
+            candidate_id += 1
+        self.move_self_to_workspace(candidate_id)
+        self.refresh_workspaces()
+        
+        # Select the new workspace in the list
+        for i in range(self.list_widget.count()):
+            item = self.list_widget.item(i)
+            if item.data(Qt.UserRole) == candidate_id:
+                self.list_widget.setCurrentItem(item)
+                break
     def open_overview(self):
         dialog = OverviewWindow(self.config, self.hypr, self)
         dialog.exec()
