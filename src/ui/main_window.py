@@ -72,9 +72,68 @@ class MainWindow(QMainWindow):
                     self.navigate_to_workspace(ws_id)
         super().keyPressEvent(event)
 
+    def create_custom_icon(self, color1, color2, with_triangle=False, icon_type="default"):
+        from PySide6.QtGui import QIcon, QPixmap, QPainter, QColor, QFont, QPainterPath, QPen
+        from PySide6.QtCore import Qt, QPoint
+        pixmap = QPixmap(32, 32)
+        pixmap.fill(Qt.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        if icon_type == "quotes":
+            painter.setPen(QColor(color1))
+            painter.setFont(QFont("Monospace", 14, QFont.Bold))
+            painter.drawText(pixmap.rect(), Qt.AlignCenter, '""')
+        elif icon_type == "collect":
+            painter.setBrush(Qt.NoBrush)
+            painter.setPen(QPen(QColor(color1), 3, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+            path = QPainterPath()
+            path.moveTo(16, 4)
+            path.lineTo(16, 20)
+            path.lineTo(8, 20)
+            path.lineTo(12, 16)
+            path.moveTo(8, 20)
+            path.lineTo(12, 24)
+            painter.drawPath(path)
+        elif icon_type == "collect_token":
+            painter.setPen(QPen(QColor(color1), 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+            painter.setBrush(Qt.NoBrush)
+            path = QPainterPath()
+            path.moveTo(16, 4)
+            path.lineTo(16, 16)
+            path.lineTo(10, 16)
+            path.lineTo(13, 13)
+            path.moveTo(10, 16)
+            path.lineTo(13, 19)
+            painter.drawPath(path)
+            painter.setPen(QColor(color1))
+            painter.setFont(QFont("Monospace", 10, QFont.Bold))
+            painter.drawText(pixmap.rect().adjusted(0, 4, 0, 0), Qt.AlignCenter, '""')
+        elif icon_type == "clock":
+            painter.setPen(QPen(QColor(color1), 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+            painter.setBrush(Qt.NoBrush)
+            painter.drawEllipse(6, 6, 20, 20)
+            painter.drawLine(16, 16, 16, 10)
+            painter.drawLine(16, 16, 22, 16)
+        elif icon_type == "magnifier":
+            painter.setPen(QPen(QColor(color1), 3, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+            painter.setBrush(Qt.NoBrush)
+            painter.drawEllipse(6, 6, 12, 12)
+            painter.drawLine(16, 16, 26, 26)
+        else:
+            painter.setBrush(QColor(color1))
+            painter.setPen(Qt.NoPen)
+            painter.drawEllipse(4, 4, 24, 24)
+            if with_triangle:
+                painter.setBrush(QColor(color2))
+                points = [QPoint(24, 24), QPoint(32, 24), QPoint(28, 32)]
+                painter.drawPolygon(points)
+        
+        painter.end()
+        return QIcon(pixmap)
+
     def filter_workspaces(self):
         self.refresh_workspaces()
-
     def setup_ui(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -100,6 +159,7 @@ class MainWindow(QMainWindow):
         # Overview and Action Buttons
         overview_layout = QHBoxLayout()
         self.overview_btn = QPushButton("Overview")
+        self.overview_btn.setIcon(self.create_custom_icon("#89b4fa", "#89b4fa", icon_type="magnifier"))
         self.overview_btn.clicked.connect(self.open_overview)
         overview_layout.addWidget(self.overview_btn)
         overview_layout.addStretch()
@@ -107,6 +167,7 @@ class MainWindow(QMainWindow):
 
         explode_layout = QHBoxLayout()
         self.explode_btn = QPushButton("Explode")
+        self.explode_btn.setIcon(self.create_custom_icon("#89b4fa", "#89b4fa", with_triangle=False))
         self.explode_btn.clicked.connect(self.on_explode_all)
         explode_layout.addWidget(self.explode_btn)
 
@@ -116,6 +177,7 @@ class MainWindow(QMainWindow):
         explode_layout.addWidget(self.app_selector_explode_all)
 
         self.explode_app_btn = QPushButton("Explode by App")
+        self.explode_app_btn.setIcon(self.create_custom_icon("#89b4fa", "#f38ba8", with_triangle=True))
         self.explode_app_btn.clicked.connect(self.on_explode_by_app)
         explode_layout.addWidget(self.explode_app_btn)
 
@@ -125,6 +187,7 @@ class MainWindow(QMainWindow):
         explode_layout.addWidget(self.app_selector_explode_app)
 
         self.explode_token_btn = QPushButton("Explode by Token")
+        self.explode_token_btn.setIcon(self.create_custom_icon("#89b4fa", "#89b4fa", icon_type="quotes"))
         self.explode_token_btn.clicked.connect(self.on_explode_by_token)
         explode_layout.addWidget(self.explode_token_btn)
         
@@ -138,6 +201,7 @@ class MainWindow(QMainWindow):
 
         collect_layout = QHBoxLayout()
         self.collect_app_btn = QPushButton("Collect by App")
+        self.collect_app_btn.setIcon(self.create_custom_icon("#89b4fa", "#89b4fa", icon_type="collect"))
         self.collect_app_btn.clicked.connect(self.on_collect_by_app)
         collect_layout.addWidget(self.collect_app_btn)
 
@@ -147,6 +211,7 @@ class MainWindow(QMainWindow):
         collect_layout.addWidget(self.app_selector)
 
         self.collect_token_btn = QPushButton("Collect by Token")
+        self.collect_token_btn.setIcon(self.create_custom_icon("#89b4fa", "#89b4fa", icon_type="collect_token"))
         self.collect_token_btn.clicked.connect(self.on_collect_by_token)
         collect_layout.addWidget(self.collect_token_btn)
 
@@ -157,6 +222,7 @@ class MainWindow(QMainWindow):
         collect_layout.addWidget(self.token_input_collect)
         
         self.collect_garbage_btn = QPushButton("Collect Garbage")
+        self.collect_garbage_btn.setIcon(self.create_custom_icon("#89b4fa", "#89b4fa", icon_type="clock"))
         self.collect_garbage_btn.clicked.connect(self.on_collect_garbage)
         self.collect_garbage_btn.setVisible(self.config.tracking_enabled)
         collect_layout.addWidget(self.collect_garbage_btn)

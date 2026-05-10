@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QTreeWidget, QTreeWidgetItem, QPushButton, QHBoxLayout, QWidget, QLabel
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QTreeWidget, QTreeWidgetItem, QPushButton, QHBoxLayout, QWidget, QLabel, QComboBox
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon, QPixmap, QColor
 import json
@@ -12,7 +12,7 @@ class OverviewWindow(QDialog):
         self.config = config
         self.hypr = hypr
         self.setWindowTitle("Workspace Overview")
-        self.setMinimumSize(950, 600)
+        self.setMinimumSize(1050, 600)
         self.apply_theme()
         self.setup_ui()
         self.populate_tree()
@@ -22,20 +22,24 @@ class OverviewWindow(QDialog):
             self.setStyleSheet("""
                 QDialog { background-color: #1e1e2e; color: #cdd6f4; }
                 QTreeWidget { background-color: #313244; color: #cdd6f4; border: 1px solid #45475a; border-radius: 5px; outline: 0; }
-                QTreeWidget::item { padding: 5px; min-height: 40px; }
+                QTreeWidget::item { padding: 5px; min-height: 30px; }
                 QTreeWidget::item:selected { background-color: #45475a; color: #89b4fa; }
                 QWidget#action_widget { background-color: transparent; border: none; }
-                QPushButton { background-color: #45475a; border: 1px solid #585b70; border-radius: 4px; color: #cdd6f4; padding: 4px 12px; font-size: 12px; height: 24px; }
+                QComboBox { background-color: #45475a; border: 1px solid #585b70; border-radius: 4px; color: #cdd6f4; padding: 2px; font-size: 11px; }
+                QComboBox QAbstractItemView { background-color: #313244; color: #cdd6f4; border: 1px solid #45475a; selection-background-color: #45475a; }
+                QPushButton { background-color: #45475a; border: 1px solid #585b70; border-radius: 4px; color: #cdd6f4; padding: 2px 8px; font-size: 11px; height: 22px; }
                 QPushButton:hover { background-color: #585b70; border: 1px solid #89b4fa; }
             """)
         else:
             self.setStyleSheet("""
                 QDialog { background-color: #eff1f5; color: #4c4f69; }
                 QTreeWidget { background-color: #e6e9ef; color: #4c4f69; border: 1px solid #ccd0da; border-radius: 5px; outline: 0; }
-                QTreeWidget::item { padding: 5px; min-height: 40px; }
+                QTreeWidget::item { padding: 5px; min-height: 30px; }
                 QTreeWidget::item:selected { background-color: #ccd0da; color: #1e66f5; }
                 QWidget#action_widget { background-color: transparent; border: none; }
-                QPushButton { background-color: #ccd0da; border: 1px solid #bcc0cc; border-radius: 4px; color: #4c4f69; padding: 4px 12px; font-size: 12px; height: 24px; }
+                QComboBox { background-color: #ccd0da; border: 1px solid #bcc0cc; border-radius: 4px; color: #4c4f69; padding: 2px; font-size: 11px; }
+                QComboBox QAbstractItemView { background-color: #e6e9ef; color: #4c4f69; border: 1px solid #ccd0da; selection-background-color: #ccd0da; }
+                QPushButton { background-color: #ccd0da; border: 1px solid #bcc0cc; border-radius: 4px; color: #4c4f69; padding: 2px 8px; font-size: 11px; height: 22px; }
                 QPushButton:hover { background-color: #bcc0cc; border: 1px solid #1e66f5; }
             """)
 
@@ -44,8 +48,9 @@ class OverviewWindow(QDialog):
         
         self.tree = QTreeWidget()
         self.tree.setHeaderLabels(["Workspace / Window", "Last Active", "Actions"])
-        self.tree.setColumnWidth(0, 450)
-        self.tree.setColumnWidth(1, 200)
+        self.tree.setColumnWidth(0, 400)
+        self.tree.setColumnWidth(1, 150)
+        self.tree.setColumnWidth(2, 400)
         layout.addWidget(self.tree)
         
         btn_layout = QHBoxLayout()
@@ -65,43 +70,72 @@ class OverviewWindow(QDialog):
     def format_elapsed_time(self, timestamp):
         now = int(time.time())
         diff = now - timestamp
-        
         hours = diff // 3600
         minutes = (diff % 3600) // 60
-        
-        if hours > 0:
-            return f"({hours}h {minutes}m ago)"
-        else:
-            return f"({minutes}m ago)"
+        return f"({hours}h {minutes}m ago)" if hours > 0 else f"({minutes}m ago)"
+
+    def get_workspace_list(self, exclude_ws_id=None):
+        ws = self.hypr.get_workspaces()
+        result = []
+        for w in sorted(ws, key=lambda x: x['id']):
+            ws_id = w['id']
+            if str(ws_id) == str(exclude_ws_id):
+                continue
+            ws_name = self.config.get_workspace_name(ws_id) or f"WS {ws_id}"
+            result.append((str(ws_id), f"{ws_id}: {ws_name}"))
+        return result
 
     def create_action_buttons(self, item, is_workspace, identifier):
         widget = QWidget()
         widget.setObjectName("action_widget")
         widget.setStyleSheet("background-color: transparent;")
-        # Set a fixed height for the container to prevent clipping
         widget.setFixedHeight(30)
         layout = QHBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
+        layout.setSpacing(5)
         
         nav_btn = QPushButton("Navigate")
-        term_btn = QPushButton("Terminate")
-        term_btn.setStyleSheet(term_btn.styleSheet() + "color: #f38ba8;") # Reddish
         
         if is_workspace:
+            term_btn = QPushButton("Terminate")
+            term_btn.setStyleSheet(term_btn.styleSheet() + "color: #f38ba8;")
             nav_btn.clicked.connect(lambda: self.on_navigate_ws(identifier))
             term_btn.clicked.connect(lambda: self.on_terminate_ws(identifier))
+            layout.addWidget(nav_btn)
+            layout.addWidget(term_btn)
         else:
-            # Identifier is (ws_id, address)
             ws_id, addr = identifier
+            term_btn = QPushButton("Terminate")
+            term_btn.setStyleSheet(term_btn.styleSheet() + "color: #f38ba8;")
+            
             nav_btn.clicked.connect(lambda: self.on_navigate_win(ws_id, addr))
             term_btn.clicked.connect(lambda: self.on_terminate_win(addr))
             
-        layout.addWidget(nav_btn)
-        layout.addWidget(term_btn)
+            # Action buttons first
+            layout.addWidget(nav_btn)
+            layout.addWidget(term_btn)
+            
+            # Workspace selector
+            ws_selector = QComboBox()
+            ws_selector.setFixedWidth(100)
+            ws_selector.setStyleSheet(self.styleSheet())
+            for w_id, w_name in self.get_workspace_list(exclude_ws_id=ws_id):
+                ws_selector.addItem(w_name, w_id)
+
+            
+            move_btn = QPushButton("Move")
+            move_btn.clicked.connect(lambda: self.on_move_win(addr, ws_selector.currentData()))
+            
+            layout.addWidget(ws_selector)
+            layout.addWidget(move_btn)
+            
         layout.addStretch()
-        
         return widget
+
+    def on_move_win(self, addr, new_ws_id):
+        self.hypr.move_window_to_workspace(addr, new_ws_id)
+        time.sleep(0.1)
+        self.populate_tree()
 
     def on_navigate_ws(self, ws_id):
         self.hypr.switch_to_workspace(ws_id)
@@ -115,21 +149,17 @@ class OverviewWindow(QDialog):
         self.populate_tree()
 
     def on_navigate_win(self, ws_id, addr):
-        # Suppress this focus event in the tracker
         try:
             suppress_file = Path.home() / ".cache" / "hypr-ws-manager" / "suppress.json"
             suppressed = []
             if suppress_file.exists():
                 with open(suppress_file, 'r') as f:
                     suppressed = json.load(f)
-            
             if addr not in suppressed:
                 suppressed.append(addr)
                 with open(suppress_file, 'w') as f:
                     json.dump(suppressed, f)
-        except:
-            pass
-
+        except: pass
         self.hypr.switch_to_workspace(ws_id)
         self.hypr.focus_window(addr)
 
@@ -140,12 +170,9 @@ class OverviewWindow(QDialog):
 
     def populate_tree(self):
         self.tree.clear()
-        
         workspaces = self.hypr.get_workspaces()
         workspaces.sort(key=lambda x: x['id'])
-        
         all_wins = [w for w in self.hypr.get_all_windows() if w['class'] != "hypr-ws-manager"]
-        
         activity = {}
         if self.config.tracking_enabled:
             cache_file = Path.home() / ".cache" / "hypr-ws-manager" / "activity.json"
@@ -153,29 +180,20 @@ class OverviewWindow(QDialog):
                 try:
                     with open(cache_file, 'r') as f:
                         activity = json.load(f)
-                except:
-                    pass
-
+                except: pass
         for ws in workspaces:
             ws_id = ws['id']
             ws_name = self.config.get_workspace_name(ws_id) or f"Workspace {ws_id}"
-            
             ws_item = QTreeWidgetItem(self.tree)
             ws_item.setText(0, f"Workspace {ws_id}: {ws_name}")
-            
-            # Actions for Workspace
             self.tree.setItemWidget(ws_item, 2, self.create_action_buttons(ws_item, True, ws_id))
-            
             ws_wins = [w for w in all_wins if int(w['workspace']['id']) == int(ws_id)]
-            
             for win in ws_wins:
                 addr = win['address']
                 win_class = win['class']
                 win_title = win['title']
-                
                 win_item = QTreeWidgetItem(ws_item)
                 win_item.setText(0, f"[{win_class}] {win_title}")
-                
                 icon = QIcon.fromTheme(win_class.lower())
                 if not icon.isNull():
                     win_item.setIcon(0, icon)
@@ -183,19 +201,11 @@ class OverviewWindow(QDialog):
                     pixmap = QPixmap(16, 16)
                     pixmap.fill(QColor(0, 0, 0, 100) if self.config.theme == "dark" else QColor(0, 0, 0, 50))
                     win_item.setIcon(0, QIcon(pixmap))
-
                 if self.config.tracking_enabled:
                     ts = activity.get(addr)
                     if ts:
                         dt = datetime.fromtimestamp(ts)
-                        # Format: Mon 08 14:30
-                        time_str = dt.strftime("%a %d %H:%M")
-                        elapsed = self.format_elapsed_time(ts)
-                        win_item.setText(1, f"{time_str} {elapsed}")
-                    else:
-                        win_item.setText(1, "Never")
-                
-                # Actions for Window
+                        win_item.setText(1, f"{dt.strftime('%a %d %H:%M')} {self.format_elapsed_time(ts)}")
+                    else: win_item.setText(1, "Never")
                 self.tree.setItemWidget(win_item, 2, self.create_action_buttons(win_item, False, (ws_id, addr)))
-        
         self.tree.expandAll()

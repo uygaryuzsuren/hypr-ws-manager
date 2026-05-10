@@ -15,8 +15,22 @@ SUPPRESS_FILE = CACHE_DIR / "suppress.json"
 def get_socket_path():
     runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
     instance_sig = os.environ.get("HYPRLAND_INSTANCE_SIGNATURE")
-    if not runtime_dir or not instance_sig:
+    
+    if not runtime_dir:
         return None
+    
+    if not instance_sig:
+        # Fallback to finding the signature in /tmp/hypr
+        hypr_dir = Path("/tmp/hypr")
+        if hypr_dir.exists():
+            # Get the most recently modified directory
+            dirs = [d for d in hypr_dir.iterdir() if d.is_dir()]
+            if dirs:
+                instance_sig = sorted(dirs, key=lambda x: x.stat().st_mtime)[-1].name
+    
+    if not instance_sig:
+        return None
+        
     return f"{runtime_dir}/hypr/{instance_sig}/.socket2.sock"
 
 class ActivityTracker:
