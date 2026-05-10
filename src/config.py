@@ -4,6 +4,9 @@ from pathlib import Path
 from shutil import which
 
 class Config:
+    APP_NAME = "hypr-ws-manager"
+    CACHE_DIR_NAME = "hypr-ws-manager"
+
     DEFAULT_CONFIG = {
         "hyprctl_path": which("hyprctl") or "hyprctl",
         "theme": "dark",

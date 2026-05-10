@@ -1,3 +1,4 @@
+from src.config import Config
 import subprocess
 import json
 import logging
@@ -58,7 +59,7 @@ class HyprManager:
         # We need the first one that is NOT the manager itself
         clients.sort(key=lambda x: x.get('focusHistoryID', 999))
         for c in clients:
-            if c.get('class') != 'hypr-ws-manager':
+            if c.get('class') != Config.APP_NAME:
                 return c
         return None
 

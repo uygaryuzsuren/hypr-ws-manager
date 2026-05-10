@@ -5,11 +5,11 @@ import signal
 import atexit
 from shutil import which
 from PySide6.QtWidgets import QApplication
-from src.config import Config
+from src.config import Config; import os
 from src.hypr_manager import HyprManager
 from src.ui.main_window import MainWindow
 
-PID_FILE = "/tmp/hypr-ws-manager.pid"
+PID_FILE = f"/tmp/{Config.APP_NAME}.pid"
 
 def cleanup_pid():
     if os.path.exists(PID_FILE):
@@ -38,8 +38,8 @@ def check_single_instance():
 def main():
     check_single_instance()
     app = QApplication(sys.argv)
-    app.setApplicationName("hypr-ws-manager")
-    app.setDesktopFileName("hypr-ws-manager")
+    app.setApplicationName(Config.APP_NAME)
+    app.setDesktopFileName(Config.APP_NAME)
     
     config = Config()
     

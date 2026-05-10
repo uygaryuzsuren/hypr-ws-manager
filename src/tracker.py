@@ -1,3 +1,4 @@
+from src.config import Config
 #!/usr/bin/env python3
 import os
 import socket
@@ -8,7 +9,7 @@ import subprocess
 from pathlib import Path
 
 # Paths
-CACHE_DIR = Path.home() / ".cache" / "hypr-ws-manager"
+CACHE_DIR = Path.home() / ".cache" / Config.CACHE_DIR_NAME
 ACTIVITY_FILE = CACHE_DIR / "activity.json"
 SUPPRESS_FILE = CACHE_DIR / "suppress.json"
 
