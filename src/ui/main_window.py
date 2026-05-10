@@ -115,6 +115,11 @@ class MainWindow(QMainWindow):
             painter.drawEllipse(6, 6, 20, 20)
             painter.drawLine(16, 16, 16, 10)
             painter.drawLine(16, 16, 22, 16)
+        elif icon_type == "plus":
+            painter.setPen(QPen(QColor(color1), 3, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+            painter.setBrush(Qt.NoBrush)
+            painter.drawLine(16, 8, 16, 24)
+            painter.drawLine(8, 16, 24, 16)
         elif icon_type == "magnifier":
             painter.setPen(QPen(QColor(color1), 3, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
             painter.setBrush(Qt.NoBrush)
@@ -135,6 +140,7 @@ class MainWindow(QMainWindow):
     def filter_workspaces(self):
         self.refresh_workspaces()
     def setup_ui(self):
+        print("DEBUG: setup_ui entered")
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         self.main_layout = QVBoxLayout(central_widget)
@@ -164,19 +170,12 @@ class MainWindow(QMainWindow):
         overview_layout.addWidget(self.overview_btn)
         
         self.new_ws_btn = QPushButton("New Workspace")
+        self.new_ws_btn.setIcon(self.create_custom_icon("#89b4fa", "#89b4fa", icon_type="plus"))
         self.new_ws_btn.clicked.connect(self.on_new_workspace)
         overview_layout.addWidget(self.new_ws_btn)
         
         overview_layout.addStretch()
         self.main_layout.addLayout(overview_layout)
-
-    def on_new_workspace(self):
-        existing_ids = self.hypr.get_existing_workspace_ids()
-        candidate_id = 1
-        while candidate_id in existing_ids:
-            candidate_id += 1
-        self.hypr.switch_to_workspace(candidate_id)
-        self.refresh_workspaces()
 
         explode_layout = QHBoxLayout()
         self.explode_btn = QPushButton("Explode")
@@ -248,7 +247,6 @@ class MainWindow(QMainWindow):
         self.garbage_time_selector.hide()
         collect_layout.addWidget(self.garbage_time_selector)
         
-        # Bottom row
         self.main_layout.addLayout(collect_layout)
 
         # Sync inputs
@@ -260,6 +258,21 @@ class MainWindow(QMainWindow):
         self.error_label.setStyleSheet("color: #f38ba8; font-weight: bold;")
         self.error_label.hide()
         self.main_layout.addWidget(self.error_label)
+
+    def on_new_workspace(self):
+        existing_ids = self.hypr.get_existing_workspace_ids()
+        candidate_id = 1
+        while candidate_id in existing_ids:
+            candidate_id += 1
+        self.hypr.switch_to_workspace(candidate_id)
+        self.refresh_workspaces()
+        
+        # Select the new workspace in the list
+        for i in range(self.list_widget.count()):
+            item = self.list_widget.item(i)
+            if item.data(Qt.UserRole) == candidate_id:
+                self.list_widget.setCurrentItem(item)
+                break
 
     def open_overview(self):
         dialog = OverviewWindow(self.config, self.hypr, self)
@@ -667,6 +680,7 @@ class MainWindow(QMainWindow):
             self.config.remove_workspace_name(ws_id)
 
     def refresh_workspaces(self):
+        print("DEBUG: refresh_workspaces entered")
         if self.is_editing:
             return
 
