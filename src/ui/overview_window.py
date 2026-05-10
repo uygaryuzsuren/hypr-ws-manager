@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QTreeWidget, QTreeWidgetItem, QPushButton, QHBoxLayout, QWidget, QLabel, QComboBox
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QIcon, QPixmap, QColor
 import json
 import time
@@ -132,12 +132,43 @@ class OverviewWindow(QDialog):
         layout.addStretch()
         return widget
 
+
+    def suppress_tracking(self, address=None):
+        try:
+            suppress_file = Path.home() / '.cache' / 'hypr-ws-manager' / 'suppress.json'
+            suppress_dir = suppress_file.parent
+            suppress_dir.mkdir(parents=True, exist_ok=True)
+            suppressed = []
+            if suppress_file.exists():
+                with open(suppress_file, 'r') as f:
+                    try: suppressed = json.load(f)
+                    except json.JSONDecodeError: pass
+            if address and address not in suppressed:
+                suppressed.append(address)
+            elif not address and 'GLOBAL_SUPPRESS' not in suppressed:
+                suppressed.append('GLOBAL_SUPPRESS')
+            with open(suppress_file, 'w') as f:
+                json.dump(suppressed, f)
+            QTimer.singleShot(500, lambda: self.resume_tracking(address))
+        except Exception as e: print(f'Failed to suppress tracking: {e}')
+
+    def resume_tracking(self, address=None):
+        try:
+            suppress_file = Path.home() / '.cache' / 'hypr-ws-manager' / 'suppress.json'
+            if not suppress_file.exists(): return
+            with open(suppress_file, 'r') as f: suppressed = json.load(f)
+            if address and address in suppressed: suppressed.remove(address)
+            elif not address and 'GLOBAL_SUPPRESS' in suppressed: suppressed.remove('GLOBAL_SUPPRESS')
+            with open(suppress_file, 'w') as f: json.dump(suppressed, f)
+        except Exception as e: print(f'Failed to resume tracking: {e}')
     def on_move_win(self, addr, new_ws_id):
+        self.suppress_tracking()
         self.hypr.move_window_to_workspace(addr, new_ws_id)
         time.sleep(0.1)
         self.populate_tree()
 
     def on_navigate_ws(self, ws_id):
+        self.suppress_tracking()
         self.hypr.switch_to_workspace(ws_id)
 
     def on_terminate_ws(self, ws_id):

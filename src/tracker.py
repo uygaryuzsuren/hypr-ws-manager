@@ -75,7 +75,7 @@ class ActivityTracker:
         self.save_state()
 
     def is_suppressed(self, address):
-        """Checks if a window address is in the suppression list and removes it if found."""
+        """Checks if a window address or global suppression is active."""
         if not SUPPRESS_FILE.exists():
             return False
             
@@ -86,6 +86,9 @@ class ActivityTracker:
             if not isinstance(suppressed, list):
                 return False
 
+            if "GLOBAL_SUPPRESS" in suppressed:
+                return True
+            
             if address in suppressed:
                 suppressed.remove(address)
                 # Atomic update of suppression file

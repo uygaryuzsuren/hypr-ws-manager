@@ -137,8 +137,52 @@ class MainWindow(QMainWindow):
         painter.end()
         return QIcon(pixmap)
 
-    def filter_workspaces(self):
-        self.refresh_workspaces()
+    def suppress_tracking(self, address=None):
+        try:
+            suppress_file = Path.home() / ".cache" / "hypr-ws-manager" / "suppress.json"
+            suppress_dir = suppress_file.parent
+            suppress_dir.mkdir(parents=True, exist_ok=True)
+            
+            suppressed = []
+            if suppress_file.exists():
+                with open(suppress_file, 'r') as f:
+                    try:
+                        suppressed = json.load(f)
+                    except json.JSONDecodeError:
+                        pass
+            
+            # If an address is provided, add it, otherwise assume global suppression (for operations)
+            if address and address not in suppressed:
+                suppressed.append(address)
+            elif not address and "GLOBAL_SUPPRESS" not in suppressed:
+                suppressed.append("GLOBAL_SUPPRESS")
+                
+            with open(suppress_file, 'w') as f:
+                json.dump(suppressed, f)
+            
+            # Schedule removal after 500ms
+            QTimer.singleShot(500, lambda: self.resume_tracking(address))
+        except Exception as e:
+            print(f"Failed to suppress tracking: {e}")
+
+    def resume_tracking(self, address=None):
+        try:
+            suppress_file = Path.home() / ".cache" / "hypr-ws-manager" / "suppress.json"
+            if not suppress_file.exists():
+                return
+            
+            with open(suppress_file, 'r') as f:
+                suppressed = json.load(f)
+            
+            if address and address in suppressed:
+                suppressed.remove(address)
+            elif not address and "GLOBAL_SUPPRESS" in suppressed:
+                suppressed.remove("GLOBAL_SUPPRESS")
+                
+            with open(suppress_file, 'w') as f:
+                json.dump(suppressed, f)
+        except Exception as e:
+            print(f"Failed to resume tracking: {e}")
     def setup_ui(self):
         print("DEBUG: setup_ui entered")
         central_widget = QWidget()
@@ -298,6 +342,7 @@ class MainWindow(QMainWindow):
             self.list_widget.setCurrentItem(item)
 
     def on_explode_by_app(self):
+        self.suppress_tracking()
         # Reveal input on first click
         if self.app_selector_explode_app.isHidden():
             self.app_selector_explode_app.show()
@@ -436,6 +481,7 @@ class MainWindow(QMainWindow):
         self.refresh_workspaces()
 
     def on_explode_all(self):
+        self.suppress_tracking()
         # Reveal input on first click
         if self.app_selector_explode_all.isHidden():
             self.app_selector_explode_all.show()
@@ -513,6 +559,7 @@ class MainWindow(QMainWindow):
         self.refresh_workspaces()
 
     def on_collect_by_app(self):
+        self.suppress_tracking()
         # Reveal input on first click
         if self.app_selector.isHidden():
             self.app_selector.show()
@@ -545,6 +592,7 @@ class MainWindow(QMainWindow):
         self.refresh_workspaces()
 
     def on_collect_by_token(self):
+        self.suppress_tracking()
         # Reveal input on first click
         if self.token_input_collect.isHidden():
             self.token_input_collect.show()
@@ -576,6 +624,7 @@ class MainWindow(QMainWindow):
         self.refresh_workspaces()
 
     def on_collect_garbage(self):
+        self.suppress_tracking()
         # Reveal selector on first click
         if self.garbage_time_selector.isHidden():
             self.garbage_time_selector.show()
