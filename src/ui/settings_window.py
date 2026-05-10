@@ -82,6 +82,11 @@ class SettingsWindow(QDialog):
         self.tracking_check = QCheckBox("Enable Window Activity Tracking (Required for Garbage Collect)")
         self.tracking_check.setChecked(self.config.tracking_enabled)
         self.tracking_check.toggled.connect(self.toggle_tracking)
+        self.fallback_font_check = QCheckBox("Use fallback font")
+        self.fallback_font_check.setChecked(self.config.use_fallback_font)
+        self.fallback_font_check.toggled.connect(self.toggle_fallback_font)
+        self.fallback_font_check.setStyleSheet("font-family: Sans Serif;")
+        layout.addWidget(self.fallback_font_check)
         layout.addWidget(self.tracking_check)
 
         # Buttons
@@ -94,6 +99,9 @@ class SettingsWindow(QDialog):
         btns_layout.addWidget(save_btn)
         btns_layout.addWidget(cancel_btn)
         layout.addLayout(btns_layout)
+
+    def toggle_fallback_font(self, checked):
+        self.config.use_fallback_font = checked
 
     def toggle_tracking(self, checked):
         if checked:

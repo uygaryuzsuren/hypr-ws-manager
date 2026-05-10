@@ -72,6 +72,16 @@ class MainWindow(QMainWindow):
                     self.navigate_to_workspace(ws_id)
         super().keyPressEvent(event)
 
+    def get_system_font(self):
+        import subprocess
+        import re
+        try:
+            out = subprocess.check_output(["fc-match", "sans-serif"], text=True)
+            match = re.search(r""(.*?)"", out)
+            if match: return match.group(1)
+        except: pass
+        return "Sans Serif"
+
     def create_custom_icon(self, color1, color2, with_triangle=False, icon_type="default"):
         from PySide6.QtGui import QIcon, QPixmap, QPainter, QColor, QFont, QPainterPath, QPen
         from PySide6.QtCore import Qt, QPoint
@@ -183,6 +193,9 @@ class MainWindow(QMainWindow):
                 json.dump(suppressed, f)
         except Exception as e:
             print(f"Failed to resume tracking: {e}")
+    def filter_workspaces(self):
+        self.refresh_workspaces()
+
     def setup_ui(self):
         print("DEBUG: setup_ui entered")
         central_widget = QWidget()
@@ -684,6 +697,7 @@ class MainWindow(QMainWindow):
         if hasattr(self, 'collect_garbage_btn'):
             is_enabled = self.config.tracking_enabled
             self.collect_garbage_btn.setVisible(is_enabled)
+            self.apply_theme()
             # If disabling, also hide the selector
             if not is_enabled:
                 self.garbage_time_selector.hide()
@@ -706,17 +720,17 @@ class MainWindow(QMainWindow):
             """)
         else:
             self.setStyleSheet(f"""
-                QMainWindow, QWidget {{ background-color: rgba(239, 241, 245, {alpha}); color: #4c4f69; }}
-                QLineEdit {{ background-color: rgba(230, 233, 239, {alpha}); border: 1px solid #ccd0da; border-radius: 5px; padding: 5px; color: #4c4f69; }}
-                QComboBox {{ background-color: rgba(204, 208, 218, {alpha}); border: 1px solid #ccd0da; border-radius: 5px; padding: 5px 10px; color: #4c4f69; }}
+                QMainWindow, QWidget {{ background-color: rgba(241, 241, 241, {alpha}); color: #2e303e; }}
+                QLineEdit {{ background-color: rgba(224, 224, 224, {alpha}); border: 1px solid #999999; border-radius: 5px; padding: 5px; color: #000000; }}
+                QComboBox {{ background-color: rgba(220, 220, 220, {alpha}); border: 1px solid #777777; border-radius: 5px; padding: 5px 10px; color: #000000; }}
                 QComboBox::drop-down {{ border: none; }}
                 QListWidget {{ background-color: transparent; border: none; outline: none; }}
-                QListWidget::item:hover {{ background-color: #ccd0da; border-radius: 5px; }}
-                QListWidget::item:selected {{ background-color: #1e66f5; border: none; border-radius: 5px; color: #ffffff; }}
-                QListWidget::item:selected:active {{ background-color: #1e66f5; border: none; }}
-                QListWidget::item:selected:!active {{ background-color: #1e66f5; border: none; }}
-                QPushButton {{ background-color: rgba(204, 208, 218, {alpha}); border: none; border-radius: 5px; color: #4c4f69; padding: 8px 12px; }}
-                QPushButton:hover {{ background-color: #bcc0cc; }}
+                QListWidget::item:hover {{ background-color: #dcdcdc; border-radius: 5px; }}
+                QListWidget::item:selected {{ background-color: #999999; border: none; border-radius: 5px; color: #ffffff; }}
+                QListWidget::item:selected:active {{ background-color: #999999; border: none; }}
+                QListWidget::item:selected:!active {{ background-color: #999999; border: none; }}
+                QPushButton {{ background-color: rgba(220, 220, 220, {alpha}); border: 1px solid #777777; border-radius: 5px; color: #000000; padding: 8px 12px; }}
+                QPushButton:hover {{ background-color: #bfbfbf; }}
             """)
 
     def cleanup_empty_workspaces(self, active_workspaces):

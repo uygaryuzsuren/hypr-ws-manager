@@ -1,7 +1,6 @@
 import json
 import os
 from pathlib import Path
-
 from shutil import which
 
 class Config:
@@ -10,14 +9,14 @@ class Config:
         "theme": "dark",
         "transparency": 0.9,
         "workspace_names": {},
-        "tracking_enabled": False
+        "tracking_enabled": False,
+        "use_fallback_font": False
     }
 
     def __init__(self):
         self.config_dir = Path.home() / ".config" / "hypr-ws-manager"
         self.config_file = self.config_dir / "config.json"
         self.data = self.DEFAULT_CONFIG.copy()
-        # Initialize original_titles if missing in legacy configs
         if "original_titles" not in self.data:
             self.data["original_titles"] = {}
         self.load()
@@ -42,62 +41,42 @@ class Config:
             print(f"Error saving config: {e}")
 
     @property
-    def hyprctl_path(self):
-        return self.data.get("hyprctl_path", "hyprctl")
-
+    def hyprctl_path(self): return self.data.get("hyprctl_path", "hyprctl")
     @hyprctl_path.setter
-    def hyprctl_path(self, value):
-        self.data["hyprctl_path"] = value
-        self.save()
+    def hyprctl_path(self, value): self.data["hyprctl_path"] = value; self.save()
 
     @property
-    def theme(self):
-        return self.data.get("theme", "dark")
-
+    def theme(self): return self.data.get("theme", "dark")
     @theme.setter
-    def theme(self, value):
-        self.data["theme"] = value
-        self.save()
+    def theme(self, value): self.data["theme"] = value; self.save()
 
     @property
-    def transparency(self):
-        return self.data.get("transparency", 0.9)
-
+    def transparency(self): return self.data.get("transparency", 0.9)
     @transparency.setter
-    def transparency(self, value):
-        self.data["transparency"] = value
-        self.save()
+    def transparency(self, value): self.data["transparency"] = value; self.save()
 
     @property
-    def tracking_enabled(self):
-        return self.data.get("tracking_enabled", False)
-
+    def tracking_enabled(self): return self.data.get("tracking_enabled", False)
     @tracking_enabled.setter
-    def tracking_enabled(self, value):
-        self.data["tracking_enabled"] = value
-        self.save()
+    def tracking_enabled(self, value): self.data["tracking_enabled"] = value; self.save()
 
-    def get_workspace_name(self, ws_id):
-        return self.data.get("workspace_names", {}).get(str(ws_id))
+    @property
+    def use_fallback_font(self): return self.data.get("use_fallback_font", False)
+    @use_fallback_font.setter
+    def use_fallback_font(self, value): self.data["use_fallback_font"] = value; self.save()
 
+    def get_workspace_name(self, ws_id): return self.data.get("workspace_names", {}).get(str(ws_id))
     def set_workspace_name(self, ws_id, name):
-        if "workspace_names" not in self.data:
-            self.data["workspace_names"] = {}
-        self.data["workspace_names"][str(ws_id)] = name
-        self.save()
+        if "workspace_names" not in self.data: self.data["workspace_names"] = {}
+        self.data["workspace_names"][str(ws_id)] = name; self.save()
 
     def set_original_title(self, ws_id, title):
-        if "original_titles" not in self.data:
-            self.data["original_titles"] = {}
-        self.data["original_titles"][str(ws_id)] = title
-        self.save()
+        if "original_titles" not in self.data: self.data["original_titles"] = {}
+        self.data["original_titles"][str(ws_id)] = title; self.save()
 
-    def get_original_title(self, ws_id):
-        return self.data.get("original_titles", {}).get(str(ws_id))
+    def get_original_title(self, ws_id): return self.data.get("original_titles", {}).get(str(ws_id))
 
     def remove_workspace_name(self, ws_id):
-        if "workspace_names" in self.data and str(ws_id) in self.data["workspace_names"]:
-            del self.data["workspace_names"][str(ws_id)]
-        if "original_titles" in self.data and str(ws_id) in self.data["original_titles"]:
-            del self.data["original_titles"][str(ws_id)]
+        if "workspace_names" in self.data and str(ws_id) in self.data["workspace_names"]: del self.data["workspace_names"][str(ws_id)]
+        if "original_titles" in self.data and str(ws_id) in self.data["original_titles"]: del self.data["original_titles"][str(ws_id)]
         self.save()
